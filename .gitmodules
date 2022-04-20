@@ -1,0 +1,3 @@
+[submodule "android-core"]
+	path = android-core
+	url = https://github.com/unicalsolutions/android-core.git

@@ -495,6 +495,25 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             false
     }
 
+    fun setItemEnabled(itemId: Int, isEnabled: Boolean): Boolean {
+        var layoutParams = overFlowedItems.find {
+            it.itemId == itemId
+        }
+        if (layoutParams != null) {
+            layoutParams.isEnabled = isEnabled
+            if (layoutParams.flags == 0)
+                return true
+        }
+        layoutParams = children.find {
+            it.layoutParams is LayoutParams && (it.layoutParams as LayoutParams).itemId == itemId
+        }?.layoutParams as? LayoutParams
+        return if (layoutParams != null) {
+            layoutParams.isEnabled = isEnabled
+            true
+        } else
+            false
+    }
+
     class Adapter(context: Context) : ArrayAdapter<LayoutParams>(context, 0, arrayListOf()) {
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
             val item = getItem(position)

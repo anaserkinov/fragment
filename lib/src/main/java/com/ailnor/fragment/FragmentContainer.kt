@@ -4,6 +4,7 @@
 
 package com.ailnor.fragment
 
+import android.animation.Animator
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Context
@@ -16,15 +17,12 @@ import android.view.animation.Transformation
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.ailnor.core.*
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private var frameAnimationFinishRunnable: Runnable? = null
-    private var inNextAnimation = false
-    private var inPreviousAnimation = false
-    private var inReplaceAnimation = false
     private var animationType = FROM_RIGHT
     private var inAnimation = false
     private var isKeyboardVisible = false
@@ -286,69 +284,32 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
 
         fun nextScreen(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
-            if (oldScreen == null) {
-                if (forceWithoutAnimation) {
-                    if (inNextAnimation)
-                        frameAnimationFinishRunnable = Runnable {
-                            nextWithoutAnimation(view, actionBar)
-                            frameAnimationFinishRunnable = null
-                        }
-                    else
-                        nextWithoutAnimation(view, actionBar)
-                } else {
-                    if (inNextAnimation)
-                        frameAnimationFinishRunnable = Runnable {
-                            startFirstNextAnimation(view, actionBar)
-                            frameAnimationFinishRunnable = null
-                        }
-                    else
-                        startFirstNextAnimation(view, actionBar)
-                }
-
+            if (forceWithoutAnimation) {
+                (leftFrame.layoutParams as Params).update(0.35f, 0)
+                if (rightFrame == null) {
+                    rightFrame = Container(context)
+                    addView(rightFrame, Params(0.65f, 0))
+                } else
+                    (rightFrame!!.layoutParams as Params).update(0.65f, 0)
+                rightFrame!!.addView(view)
+                if (actionBar != null)
+                    rightFrame!!.addView(actionBar)
+                newScreen2?.resume()
+                newScreen2 = null
+                requestLayout()
             } else {
-                if (forceWithoutAnimation) {
-                    if (inNextAnimation) {
-                        frameAnimationFinishRunnable = Runnable {
-                            nextWithoutAnimation(view, actionBar)
-                            frameAnimationFinishRunnable = null
-                        }
-                    } else
-                        nextWithoutAnimation(view, actionBar)
-                } else {
-                    if (frame == null) {
-                        frame = Container(context)
-                        frame!!.layoutParams = Params(0f, 0)
-                    }
-                    if (inNextAnimation) {
-                        frameAnimationFinishRunnable = Runnable {
-                            startNextAnimation(view, actionBar)
-                            frameAnimationFinishRunnable = null
-                        }
-                    } else
-                        startNextAnimation(view, actionBar)
-                }
+                if (oldScreen == null)
+                    startFirstNextAnimation(view, actionBar)
+                else
+                    startNextAnimation(view, actionBar)
             }
-        }
-
-        private fun nextWithoutAnimation(view: View, actionBar: ActionBar?) {
-            (leftFrame.layoutParams as Params).update(0.35f, 0)
-            if (rightFrame == null) {
-                rightFrame = Container(context)
-                addView(rightFrame, Params(0.65f, 0))
-            } else
-                (rightFrame!!.layoutParams as Params).update(0.65f, 0)
-            rightFrame!!.addView(view)
-            if (actionBar != null)
-                rightFrame!!.addView(actionBar)
-            newScreen2?.resume()
-            newScreen2 = null
-            requestLayout()
         }
 
         private fun startFirstNextAnimation(view: View, actionBar: ActionBar?) {
             inAnimation = true
-            inNextAnimation = true
+            var thisInAnimation = true
             animationType = FROM_RIGHT
+
             if (rightFrame == null) {
                 rightFrame = Container(context)
                 addView(rightFrame, Params(0.65f, 0))
@@ -357,6 +318,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             rightFrame!!.addView(view)
             if (actionBar != null)
                 rightFrame!!.addView(actionBar)
+
             startAnimation(
                 object : Animation() {
                     init {
@@ -367,12 +329,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
                             override fun onAnimationEnd(animation: Animation?) {
                                 inAnimation = false
+                                thisInAnimation = false
                                 newScreen?.resume()
                                 newScreen = null
-                                if (frameAnimationFinishRunnable == null)
-                                    inNextAnimation = false
-                                else
-                                    frameAnimationFinishRunnable!!.run()
+                                frameAnimationFinishRunnable?.run()
                             }
 
                             override fun onAnimationRepeat(animation: Animation?) {
@@ -384,7 +344,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         interpolatedTime: Float,
                         t: Transformation?
                     ) {
-                        if (inAnimation) {
+                        if (thisInAnimation) {
                             (leftFrame.layoutParams as Params).weight =
                                 1f - interpolatedTime * 0.65f
                             requestLayout()
@@ -395,14 +355,16 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         }
 
         private fun startNextAnimation(view: View, actionBar: ActionBar?) {
-            inNextAnimation = true
             inAnimation = true
+            var thisInAnimation = true
             animationType = FROM_RIGHT
+
             (frame!!.layoutParams as Params).update(0.65f, 0)
             frame!!.addView(view)
             addView(frame)
             if (actionBar != null)
                 frame!!.addView(actionBar)
+
             startAnimation(
                 object : Animation() {
                     init {
@@ -417,6 +379,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 rightFrame = frame
                                 frame = temp
                                 inAnimation = false
+                                thisInAnimation = false
                                 removeViewInLayout(frame!!)
                                 presentScreenInternalRemoveOld(
                                     false,
@@ -426,10 +389,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                     oldScreen
                                 )
                                 newScreen?.resume()
-                                if (frameAnimationFinishRunnable == null)
-                                    inNextAnimation = false
-                                else
-                                    frameAnimationFinishRunnable!!.run()
+                                frameAnimationFinishRunnable?.run()
                             }
 
                             override fun onAnimationRepeat(animation: Animation?) {
@@ -441,7 +401,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         interpolatedTime: Float,
                         t: Transformation?
                     ) {
-                        if (inAnimation) {
+                        if (thisInAnimation) {
                             (leftFrame.layoutParams as Params).update(
                                 0.35f - (0.15f) * interpolatedTime,
                                 -(measuredWidth * 0.20 * interpolatedTime).toInt()
@@ -455,23 +415,29 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             )
         }
 
-        fun previousScreen(view: View?, actionBar: ActionBar?) {
-            if (view == null) {
-                if (inPreviousAnimation)
-                    frameAnimationFinishRunnable = Runnable {
-                        startLastPreviousAnimation()
-                        frameAnimationFinishRunnable = null
-                    }
-                else
-                    startLastPreviousAnimation()
-            } else if (inPreviousAnimation) {
-                frameAnimationFinishRunnable = Runnable {
-                    startPreviousAnimation(view, actionBar)
-                    frameAnimationFinishRunnable = null
+        fun previousScreen(view: View?, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
+            if (forceWithoutAnimation)
+                if (view == null){
+                    (leftFrame.layoutParams as Params).update(1f, 0)
+                    requestLayout()
+                } else {
+                    (leftFrame.layoutParams as Params).update(0.35f, 0)
+                    if (rightFrame == null) {
+                        rightFrame = Container(context)
+                        addView(rightFrame, Params(0.65f, 0))
+                    } else
+                        (rightFrame!!.layoutParams as Params).update(0.65f, 0)
+                    rightFrame!!.addView(view)
+                    if (actionBar != null)
+                        rightFrame!!.addView(actionBar)
+                    newScreen2?.resume()
+                    newScreen2 = null
+                    requestLayout()
                 }
-            } else {
+            else if (view == null)
+                startLastPreviousAnimation()
+            else
                 startPreviousAnimation(view, actionBar)
-            }
         }
 
         private fun startLastPreviousAnimation() {
@@ -778,7 +744,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private var containerView = GroupContainer(context)
     private var containerViewBack = GroupContainer(context)
-    private var backgroundView: View? = null
     private var currentAnimationSet: AnimatorSet? = null
     private var currentGroupId = 0
 
@@ -835,8 +800,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     }
                 }
             }
-            if (fragment.actionBar != null && fragment.actionBar!!.shouldAddToContainer) {
-                val parent = fragment.actionBar!!.parent as? ViewGroup
+            if (fragment.actionBar != null && fragment.requiredActionBar.shouldAddToContainer) {
+                val parent = fragment.requiredActionBar.parent as? ViewGroup
                 parent?.removeViewInLayout(fragment.actionBar)
             }
         }
@@ -859,144 +824,145 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false
     ): Boolean {
-        if (inPreviousAnimation || inNextAnimation || inReplaceAnimation)
+        if (!screen.onScreenCreate())
             return false
-        if (!screen.onScreenCreate()) {
-            return false
-        }
-        currentAnimationSet?.removeAllListeners()
-        currentAnimationSet?.end()
 
-        if (parentActivity.currentFocus != null && screen.hideKeyboardOnShow())
-            parentActivity.currentFocus.hideKeyboard()
+        if (inAnimation && frameAnimationFinishRunnable == null)
+            frameAnimationFinishRunnable = Runnable {
+                if (parentActivity.currentFocus != null && screen.hideKeyboardOnShow())
+                    parentActivity.currentFocus.hideKeyboard()
 
-        if (newGroup)
-            currentGroupId++
-        screen.groupId = currentGroupId
-        screen.parentLayout = this
+                if (newGroup)
+                    currentGroupId++
+                screen.groupId = currentGroupId
+                screen.parentLayout = this
 
-        var screenView = screen.savedView
-        if (screenView != null) {
-            val parent = screenView.parent as? ViewGroup
-            if (parent != null) {
-                screen.onRemoveFromParent()
-                parent.removeView(screenView)
+                var screenView = screen.savedView
+                if (screenView != null) {
+                    val parent = screenView.parent as? ViewGroup
+                    if (parent != null) {
+                        screen.onRemoveFromParent()
+                        parent.removeView(screenView)
+                    }
+                } else
+                    screenView = screen.createView(context)
+
+                if (screen.actionBar != null && screen.requiredActionBar.shouldAddToContainer) {
+                    val parent = screen.requiredActionBar.parent as? ViewGroup
+                    parent?.removeView(screen.actionBar)
+                    containerViewBack.addGroup(screenView, screen.requiredActionBar)
+                } else
+                    containerViewBack.addGroup(screenView, null)
+
+                screensStack.add(screen)
+
+                val temp = containerView
+                containerView = containerViewBack
+                containerViewBack = temp
+                containerView.visibility = View.VISIBLE
+                bringChildToFront(containerView)
+
+                if (forceWithoutAnimation) {
+                    if (screensStack.size > 1) {
+                        val oldScreen = screensStack[screensStack.size - 2]
+                        oldScreen.onTransitionAnimationStart(false, false)
+                        oldScreen.onTransitionAnimationEnd(false, false)
+                        oldScreen.pause()
+                        if (removeLast) {
+                            screensStack.removeAt(screensStack.size - 2)
+                            oldScreen.onScreenDestroy()
+                            oldScreen.parentLayout = null
+                        }
+                        presentScreenInternalRemoveOld(true, removeLast, false, false, oldScreen)
+                    }
+                    screen.onTransitionAnimationStart(true, false)
+                    screen.onTransitionAnimationEnd(true, false)
+                    screen.onBecomeFullyVisible()
+                    screen.resume()
+                }
             }
-        } else
-            screenView = screen.createView(context)
 
-        if (screen.actionBar != null && screen.actionBar!!.shouldAddToContainer) {
-            val parent = screen.actionBar!!.parent as? ViewGroup
-            parent?.removeView(screen.actionBar)
-            containerViewBack.addGroup(screenView, screen.actionBar!!)
-        } else
-            containerViewBack.addGroup(screenView, null)
 
-        screensStack.add(screen)
+        if (!forceWithoutAnimation) {
 
-        val temp = containerView
-        containerView = containerViewBack
-        containerViewBack = temp
-        containerView.visibility = View.VISIBLE
+            screen.onViewCreated()
+            currentAnimationSet = AnimatorSet()
+            currentAnimationSet!!.duration = 200
+            val alphaAnimation = ObjectAnimator.ofFloat(containerView, View.ALPHA, 0.8f, 1.0f)
+            val translationXAnimation = ObjectAnimator.ofFloat(
+                containerView,
+                View.TRANSLATION_X,
+                containerView.measuredWidth * 0.3f,
+                0f
+            )
+            currentAnimationSet!!.addListener(object : Animator.AnimatorListener {
+                override fun onAnimationStart(animation: Animator?) {
+                }
 
-        bringChildToFront(containerView)
+                override fun onAnimationEnd(animation: Animator?) {
+                    screen.resume()
+                    if (screensStack.size > 1) {
+                        val oldScreen = screensStack[screensStack.size - 2]
+                        presentScreenInternalRemoveOld(
+                            newGroup,
+                            removeLast,
+                            false,
+                            false,
+                            oldScreen
+                        )
+                        if (screensStack.size > 2 && !removeLast || screensStack.size > 1 && removeLast) {
+                            if (oldScreen.groupId == screensStack[screensStack.size - 3].groupId)
+                                presentScreenInternalRemoveOld(
+                                    true,
+                                    false,
+                                    false,
+                                    false,
+                                    screensStack[screensStack.size - 3]
+                                )
+                        }
+                    }
+                }
 
-//        if (forceWithoutAnimation) {
-//            presentScreenInternalRemoveOld(true, removeLast, currentScreen)
-//        }
+                override fun onAnimationCancel(animation: Animator?) {
+                    screen.resume()
+                    if (screensStack.size > 1) {
+                        val oldScreen = screensStack[screensStack.size - 2]
+                        presentScreenInternalRemoveOld(
+                            newGroup,
+                            removeLast,
+                            false,
+                            false,
+                            oldScreen
+                        )
+                        if (screensStack.size > 2 && !removeLast || screensStack.size > 1 && removeLast) {
+                            if (oldScreen.groupId == screensStack[screensStack.size - 3].groupId)
+                                presentScreenInternalRemoveOld(
+                                    true,
+                                    false,
+                                    false,
+                                    false,
+                                    screensStack[screensStack.size - 3]
+                                )
+                        }
+                    }
+                }
 
-//        if (!forceWithoutAnimation) {
+                override fun onAnimationRepeat(animation: Animator?) {
+                }
+            })
+            currentAnimationSet!!.playTogether(alphaAnimation, translationXAnimation)
+            currentAnimationSet!!.start()
+        } else {
 
-        screen.onViewCreated()
-        currentAnimationSet = AnimatorSet()
-        currentAnimationSet!!.duration = 200
-        val alphaAnimation = ObjectAnimator.ofFloat(containerView, View.ALPHA, 0.8f, 1.0f)
-        val translationXAnimation = ObjectAnimator.ofFloat(
-            containerView,
-            View.TRANSLATION_X,
-            containerView.measuredWidth * 0.3f,
-            0f
-        )
-//        currentAnimationSet!!.addListener(object :Animator.AnimatorListener{
-//            override fun onAnimationStart(animation: Animator?) {
-//            }
-//
-//            override fun onAnimationEnd(animation: Animator?) {
-//                screen.resume()
-//                if (screensStack.size > 1) {
-//                    val oldScreen = screensStack[screensStack.size - 2]
-//                    presentScreenInternalRemoveOld(newGroup, removeLast, false, false, oldScreen)
-//                    if (screensStack.size > 2 && !removeLast || screensStack.size > 1 && removeLast) {
-//                        if (oldScreen.groupId == screensStack[screensStack.size - 3].groupId)
-//                            presentScreenInternalRemoveOld(
-//                                true,
-//                                false,
-//                                false,
-//                                false,
-//                                screensStack[screensStack.size - 3]
-//                            )
-//                    }
-//                }
-//            }
-//
-//            override fun onAnimationCancel(animation: Animator?) {
-//                screen.resume()
-//                if (screensStack.size > 1) {
-//                    val oldScreen = screensStack[screensStack.size - 2]
-//                    presentScreenInternalRemoveOld(newGroup, removeLast, false, false, oldScreen)
-//                    if (screensStack.size > 2 && !removeLast || screensStack.size > 1 && removeLast) {
-//                        if (oldScreen.groupId == screensStack[screensStack.size - 3].groupId)
-//                            presentScreenInternalRemoveOld(
-//                                true,
-//                                false,
-//                                false,
-//                                false,
-//                                screensStack[screensStack.size - 3]
-//                            )
-//                    }
-//                }
-//            }
-//
-//            override fun onAnimationRepeat(animation: Animator?) {
-//            }
-//        })
-        currentAnimationSet!!.playTogether(alphaAnimation, translationXAnimation)
-        currentAnimationSet!!.start()
-//        } else {
-//            if (backgroundView != null) {
-//                backgroundView!!.alpha = 1.0f
-//                backgroundView!!.visibility = View.VISIBLE
-//            }
-//            if (currentScreen != null) {
-//                currentScreen.onTransitionAnimationStart(false, false)
-//                currentScreen.onTransitionAnimationEnd(false, false)
-//            }
-//            screen.onTransitionAnimationStart(true, false)
-//            screen.onTransitionAnimationEnd(true, false)
-//            screen.onBecomeFullyVisible()
-//        }
+        }
 
         screen.resume()
-        if (screensStack.size > 1) {
-            val oldScreen = screensStack[screensStack.size - 2]
-            presentScreenInternalRemoveOld(newGroup, removeLast, false, false, oldScreen)
-            if (screensStack.size > 2 && !removeLast || screensStack.size > 1 && removeLast) {
-                if (oldScreen.groupId == screensStack[screensStack.size - 3].groupId)
-                    presentScreenInternalRemoveOld(
-                        true,
-                        false,
-                        false,
-                        false,
-                        screensStack[screensStack.size - 3]
-                    )
-            }
-        }
         return true
     }
 
-    fun nextScreen(screen: Fragment, removeLast: Boolean): Boolean {
+    fun nextScreen(screen: Fragment, removeLast: Boolean, forceWithoutAnimation: Boolean): Boolean {
         if (!Utilities.isLandscapeTablet)
-            return presentScreen(screen, false, false, false)
+            return presentScreen(screen, false, removeLast, forceWithoutAnimation)
         if (inPreviousAnimation || inNextAnimation || inReplaceAnimation)
             return false
         if (!screen.onScreenCreate()) {
@@ -1027,8 +993,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         screensStack.add(screen)
 
-        if (screen.actionBar != null && screen.actionBar!!.shouldAddToContainer) {
-            val parent = screen.actionBar!!.parent as? ViewGroup
+        if (screen.actionBar != null && screen.requiredActionBar.shouldAddToContainer) {
+            val parent = screen.requiredActionBar.parent as? ViewGroup
             parent?.removeView(screen.actionBar)
             if (removeLast)
                 containerView.replaceScreen(screenView, screen.actionBar)
@@ -1063,8 +1029,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             if (screensStack.isNotEmpty()) {
                 val previousFragment: Fragment = screensStack[screensStack.size - 1]
                 previousFragment.pause()
-                if (previousFragment.actionBar != null && previousFragment.actionBar!!.shouldAddToContainer) {
-                    val parent = previousFragment.actionBar!!.parent as? ViewGroup
+                if (previousFragment.actionBar != null && previousFragment.requiredActionBar.shouldAddToContainer) {
+                    val parent = previousFragment.requiredActionBar.parent as? ViewGroup
                     parent?.removeView(previousFragment.actionBar)
                 }
                 if (previousFragment.savedView != null) {
@@ -1088,8 +1054,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         }
         for (a in 0 until screensStack.size - 1) {
             val previousFragment: Fragment = screensStack.get(a)
-            if (previousFragment.actionBar != null && previousFragment.actionBar!!.shouldAddToContainer) {
-                val parent = previousFragment.actionBar!!.parent as ViewGroup
+            if (previousFragment.actionBar != null && previousFragment.requiredActionBar.shouldAddToContainer) {
+                val parent = previousFragment.requiredActionBar.parent as ViewGroup
                 parent.removeView(previousFragment.actionBar)
             }
             if (previousFragment.savedView != null) {
@@ -1114,8 +1080,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             }
         }
         containerView.addView(fragmentView)
-        if (previousFragment.actionBar != null && previousFragment.actionBar!!.shouldAddToContainer) {
-            val parent = previousFragment.actionBar!!.parent as? ViewGroup
+        if (previousFragment.actionBar != null && previousFragment.requiredActionBar.shouldAddToContainer) {
+            val parent = previousFragment.requiredActionBar.parent as? ViewGroup
             parent?.removeView(previousFragment.actionBar)
             containerView.addView(previousFragment.actionBar)
         }
@@ -1146,11 +1112,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             parent?.removeView(preView)
                         } else
                             preView = preScreen.createView(context)
-                        if (preScreen.actionBar != null && preScreen.actionBar!!.shouldAddToContainer) {
-                            val parent = preScreen.actionBar!!.parent as? ViewGroup
+                        if (preScreen.actionBar != null && preScreen.requiredActionBar.shouldAddToContainer) {
+                            val parent = preScreen.requiredActionBar.parent as? ViewGroup
                             parent?.removeView(preScreen.actionBar)
                         }
-                        newScreen = preScreen
                         containerView.previousScreen(preView, preScreen.actionBar)
                     } else {
                         newScreen = null
@@ -1200,7 +1165,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 containerViewBack.addGroup(rightView, rightActionBar)
                 containerViewBack.nextScreen(view, actionBar, true)
             }
-
 
             val temp = containerViewBack
             containerViewBack = containerView
@@ -1362,7 +1326,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         } else screensStack[screensStack.size - 1]
     }
 
-    fun onOrientationChanged(){
+    fun onOrientationChanged() {
         if (screensStack.isNotEmpty()) {
             screensStack.forEach {
                 it.onOrientationChanged()
@@ -1382,8 +1346,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         } else
                             screenView = preScreen.createView(context)
 
-                        if (preScreen.actionBar != null && preScreen.actionBar!!.shouldAddToContainer) {
-                            val parent = preScreen.actionBar!!.parent as? ViewGroup
+                        if (preScreen.actionBar != null && preScreen.requiredActionBar.shouldAddToContainer) {
+                            val parent = preScreen.requiredActionBar.parent as? ViewGroup
                             parent?.removeView(preScreen.actionBar)
                             containerView.openLeft(screenView, preScreen.actionBar)
                         } else

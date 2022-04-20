@@ -64,9 +64,9 @@ abstract class Fragment : LifecycleOwner {
                 }
                 if (actionBar != null) {
                     val differentParent =
-                        parentLayout != null && parentLayout!!.context !== actionBar!!.context
-                    if (actionBar!!.shouldAddToContainer || differentParent) {
-                        val parent = actionBar!!.parent as? ViewGroup
+                        parentLayout != null && parentLayout!!.context !== requiredActionBar.context
+                    if (requiredActionBar.shouldAddToContainer || differentParent) {
+                        val parent = requiredActionBar.parent as? ViewGroup
                         if (parent != null) {
                             try {
                                 parent.removeViewInLayout(actionBar)
@@ -80,7 +80,7 @@ abstract class Fragment : LifecycleOwner {
                 }
                 if (hasToolbar && parentLayout != null && actionBar == null) {
                     actionBar = createActionBar(parentLayout!!.context)
-                    actionBar!!.actionListener = object: ActionBar.ActionListener{
+                    requiredActionBar.actionListener = object: ActionBar.ActionListener{
                         override fun onAction(action: Int) {
                             onOptionsItemSelected(action)
                         }
@@ -122,6 +122,9 @@ abstract class Fragment : LifecycleOwner {
 
     var actionBar: ActionBar? = null
         protected set
+    val requiredActionBar: ActionBar
+    get() = actionBar!!
+
     protected var inTransitionAnimation = false
     protected var fragmentBeginToShow = false
 
@@ -192,7 +195,7 @@ abstract class Fragment : LifecycleOwner {
     }
 
     protected open fun setActionBarNavigationType(type: Int){
-        actionBar!!.setTitle(type)
+        requiredActionBar.setTitle(type)
     }
 
     open fun onConfigurationChanged(newConfig: Configuration?) {}

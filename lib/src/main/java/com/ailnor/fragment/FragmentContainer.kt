@@ -114,6 +114,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             (rightFrame?.layoutParams as? Params)?.update(0f, 0)
             (frame?.layoutParams as? Params)?.update(0f, 0)
             (leftFrame.layoutParams as Params).update(1f, 0)
+            requestLayout()
             leftFrame.addView(view)
             if (actionBar != null)
                 leftFrame.addView(actionBar)
@@ -180,12 +181,16 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     )
                 }
             } else {
-                if (leftFrameParams.weight > 0.5f)
+                if (leftFrameParams.weight > 0.5f) {
                     leftFrame.measure(
                         widthMeasureSpec,
                         heightMeasureSpec
                     )
-                else {
+                    rightFrame?.measure(
+                        measureSpec_exactly(0),
+                        measureSpec_exactly(0)
+                    )
+                } else {
                     leftFrame.measure(
                         measureSpec_exactly((width * 0.35f).toInt()),
                         heightMeasureSpec
@@ -256,11 +261,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     )
                 }
             } else {
-                if (leftFrameParams.weight > 0.5f)
+                if (leftFrameParams.weight > 0.5f) {
                     leftFrame.layout(
                         0, 0, measuredWidth, measuredHeight
                     )
-                else {
+                    rightFrame?.layout(
+                        0, 0, 0, 0
+                    )
+                }else {
                     leftFrame.layout(
                         0, 0, leftFrame.measuredWidth, measuredHeight
                     )
@@ -1194,13 +1202,13 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             } else
                 actionBar = null
 
+
             if (rightView == null)
                 containerViewBack.addGroup(view, actionBar)
             else {
                 containerViewBack.addGroup(rightView, rightActionBar)
                 containerViewBack.nextScreen(view, actionBar, true)
             }
-
 
             val temp = containerViewBack
             containerViewBack = containerView

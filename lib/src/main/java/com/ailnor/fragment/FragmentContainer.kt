@@ -851,17 +851,17 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         containerViewBack.visibility = GONE
     }
 
-    fun presentScreen(
+    fun presentFragment(
         screen: Fragment,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false,
     ): Boolean {
-        return presentScreen(
+        return presentFragment(
             screen, true, removeLast, forceWithoutAnimation
         )
     }
 
-    private fun presentScreen(
+    fun presentFragment(
         screen: Fragment,
         newGroup: Boolean,
         removeLast: Boolean = false,
@@ -1004,7 +1004,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     fun nextScreen(screen: Fragment, removeLast: Boolean): Boolean {
         if (!Utilities.isLandscapeTablet)
-            return presentScreen(screen, false, false, false)
+            return presentFragment(screen, false, false, false)
         if (inPreviousAnimation || inNextAnimation || inReplaceAnimation)
             return false
         if (!screen.onScreenCreate()) {
@@ -1056,33 +1056,19 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         BottomSheet(screen).show(parentActivity.supportFragmentManager, "Sheet")
     }
 
-    fun addScreenToStack(screen: Fragment): Boolean {
-        return addScreenToStack(screen, -1)
+    fun addFragmentToStack(screen: Fragment, newGroup: Boolean = true): Boolean {
+        return addFragmentToStack(screen, newGroup, -1)
     }
 
-    fun addScreenToStack(screen: Fragment, position: Int): Boolean {
+    fun addFragmentToStack(screen: Fragment, newGroup: Boolean, position: Int): Boolean {
         if (!screen.onScreenCreate()) {
             return false
         }
+        if (newGroup)
         currentGroupId++
         screen.groupId = currentGroupId
         screen.parentLayout = this
         if (position == -1) {
-            if (screensStack.isNotEmpty()) {
-                val previousFragment: Fragment = screensStack[screensStack.size - 1]
-                previousFragment.pause()
-                if (previousFragment.actionBar != null && previousFragment.requiredActionBar.shouldAddToContainer) {
-                    val parent = previousFragment.requiredActionBar.parent as? ViewGroup
-                    parent?.removeView(previousFragment.actionBar)
-                }
-                if (previousFragment.savedView != null) {
-                    val parent = previousFragment.savedView?.parent as? ViewGroup
-                    if (parent != null) {
-                        previousFragment.onRemoveFromParent()
-                        parent.removeView(previousFragment.savedView)
-                    }
-                }
-            }
             screensStack.add(screen)
         } else {
             screensStack.add(position, screen)

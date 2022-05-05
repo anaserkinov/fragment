@@ -41,14 +41,16 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
     private val overFlowView: BadgeImageView = BadgeImageView(context)
 
     private var adapter: Adapter? = null
-    private val overFlowedItems = arrayListOf<LayoutParams>()
+    private val activeOverflowItems = arrayListOf<LayoutParams>()
+    private val invisibleOverflowItems = arrayListOf<LayoutParams>()
+
     private val listPopup by lazy {
         val popupMenu = ListPopupWindow(context)
         popupMenu.anchorView = overFlowView
         adapter = Adapter(context)
         popupMenu.setOnItemClickListener { _, _, position, _ ->
             popupMenu.dismiss()
-            actionListener.onAction(overFlowedItems[position].itemId)
+            actionListener.onAction(activeOverflowItems[position].itemId)
         }
         popupMenu.setAdapter(adapter)
         popupMenu.verticalOffset = -dp(48)
@@ -121,7 +123,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
 
         setPadding(dp(4), dp(8), dp(4), dp(8))
 
-        val overFlow = context.resources.getDrawable(com.ailnor.core.R.drawable._ic_over_flow).mutate()
+        val overFlow =
+            context.resources.getDrawable(com.ailnor.core.R.drawable._ic_over_flow).mutate()
         overFlow.setTint(Theme.black)
         overFlowView.setPadding(dp(12))
         overFlowView.setImageDrawable(overFlow)
@@ -129,7 +132,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         overFlowView.setOnClickListener {
             listPopup
             adapter!!.clear()
-            adapter!!.addAll(overFlowedItems)
+            adapter!!.addAll(activeOverflowItems)
             listPopup.width = measureContentWidth()
             listPopup.show()
         }
@@ -196,7 +199,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         else if (itemId == ITEM_NAVIGATION)
             navigationView?.isShowing = isVisible
         else {
-            val layoutParams = overFlowedItems.find {
+            val layoutParams = activeOverflowItems.find {
                 it.itemId == itemId
             }
             if (layoutParams != null) {
@@ -227,7 +230,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        var width = MeasureSpec.getSize(widthMeasureSpec)
+        val realWidth = MeasureSpec.getSize(widthMeasureSpec)
+        var width = realWidth
         var actionStartIndex = if (editText != null)
             3
         else
@@ -256,7 +260,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             )
 
             setMeasuredDimension(
-                MeasureSpec.getSize(widthMeasureSpec),
+                realWidth,
                 dp(64)
             )
 
@@ -273,14 +277,17 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                 val child = getChildAt(i)
                 val layoutParams = child.layoutParams
                 if (layoutParams is LayoutParams) {
-                    if (!layoutParams.isVisible){
+                    if (!layoutParams.isVisible) {
                         child.visibility = GONE
-                        if (layoutParams.flags and LayoutParams.SHOW_AS_ACTION_ALWAYS != 0)
-                        overFlowedItems.remove(layoutParams)
                         continue
                     }
                     if (leftSpace == 0) {
                         child.visibility = GONE
+                        if (layoutParams.flags and LayoutParams.SHOW_AS_ACTION_IF_ROOM != 0 && !activeOverflowItems.contains(
+                                layoutParams
+                            )
+                        )
+                            activeOverflowItems.add(layoutParams)
                         continue
                     }
                     child.measure(measureSpec_unspecified, measureSpec_unspecified)
@@ -291,7 +298,9 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                             while (leftSpace < dp(48) && index < childCount) {
                                 val preChild = getChildAt(i - 1)
                                 preChild.visibility = View.GONE
-                                overFlowedItems.add(preChild.layoutParams as LayoutParams)
+                                //                                if ((preChild.layoutParams as LayoutParams).flags and LayoutParams.SHOW_AS_ACTION_ALWAYS == 0)
+//                                    activeOverflowItems.add(preChild.layoutParams as LayoutParams)
+                                activeOverflowItems.add(preChild.layoutParams as LayoutParams)
                                 leftSpace += preChild.measuredWidth
                                 index++
                             }
@@ -300,19 +309,19 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                         }
                         if (layoutParams.flags == LayoutParams.SHOW_AS_ACTION_IF_ROOM) {
                             child.visibility = GONE
-                            overFlowedItems.add(layoutParams)
+                            activeOverflowItems.add(layoutParams)
                         }
                         leftSpace = 0
                     } else {
                         width -= child.measuredWidth
                         child.visibility = VISIBLE
-                        overFlowedItems.remove(layoutParams)
+                        activeOverflowItems.remove(layoutParams)
                     }
                 }
             }
         }
 
-        if (overFlowedItems.isNotEmpty() && !inSearchMode) {
+        if (activeOverflowItems.isNotEmpty() && !inSearchMode) {
             overFlowView.visibility = View.VISIBLE
             overFlowView.measure(
                 dp(24),
@@ -331,7 +340,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             )
 
         setMeasuredDimension(
-            MeasureSpec.getSize(widthMeasureSpec),
+            realWidth,
             dp(64)
         )
     }
@@ -399,7 +408,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         val layoutParams = LayoutParams(itemId, titleRes, iconRes)
         layoutParams.flags = flags
         if (flags == 0)
-            overFlowedItems.add(layoutParams)
+            activeOverflowItems.add(layoutParams)
         else {
             val view = layoutParams.getView(context, iconRes != 0)
             view.setOnClickListener {
@@ -429,7 +438,11 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                 searchCloseButton!!.setOnClickListener {
                     editText!!.text.clear()
                 }
-                searchCloseButton!!.setImageDrawable(com.ailnor.core.R.drawable._ic_cross.coloredDrawable(Theme.black))
+                searchCloseButton!!.setImageDrawable(
+                    com.ailnor.core.R.drawable._ic_cross.coloredDrawable(
+                        Theme.black
+                    )
+                )
 
                 addView(searchCloseButton, 0)
                 addView(editText, 0)
@@ -438,8 +451,81 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         return layoutParams
     }
 
+    fun addSearch() {
+        editText = EditText(context)
+        editText!!.background = null
+        editText!!.visibility = View.GONE
+        editText!!.setTextColor(Theme.black)
+        editText!!.setHintTextColor(Theme.black.alpha(30))
+
+        searchCloseButton = ImageView(context)
+        searchCloseButton!!.setPadding(dp(12))
+        searchCloseButton!!.background = makeCircleRippleDrawable()
+        searchCloseButton!!.setOnClickListener {
+            editText!!.text.clear()
+        }
+        searchCloseButton!!.setImageDrawable(
+            com.ailnor.core.R.drawable._ic_cross.coloredDrawable(
+                Theme.black
+            )
+        )
+
+        addView(searchCloseButton, 0)
+        addView(editText, 0)
+    }
+
+    fun setItemClickListener(layoutParams: LayoutParams) {
+        layoutParams.getView(context, layoutParams.icon != 0).setOnClickListener {
+            if (layoutParams.flags and LayoutParams.SEARCH == 0)
+                actionListener.onAction(layoutParams.itemId)
+            else {
+                searchCloseButton!!.visibility = View.VISIBLE
+                editText!!.visibility = View.VISIBLE
+                editText!!.showKeyboard()
+                searchListener?.onSearchExpanded()
+            }
+        }
+    }
+
+    fun addOverFlowItem(layoutParams: LayoutParams) {
+        if (layoutParams.isVisible)
+            activeOverflowItems.add(layoutParams)
+        else
+            invisibleOverflowItems.add(layoutParams)
+    }
+
+
+//    fun setItemVisibility(itemId: Int, isVisible: Boolean): Boolean {
+//        var layoutParams = children.find {
+//            it.layoutParams is LayoutParams && (it.layoutParams as LayoutParams).itemId == itemId
+//        }?.layoutParams as? LayoutParams
+//
+//        return if (layoutParams != null) {
+//            layoutParams.isVisible = isVisible
+//            if (!isVisible && activeOverflowItems.contains(layoutParams))
+//                activeOverflowItems.remove(layoutParams)
+//            true
+//        } else {
+//            if (isVisible) {
+//                layoutParams = invisibleOverflowItems.find {
+//                    it.itemId == itemId
+//                } ?: return false
+//                invisibleOverflowItems.remove(layoutParams)
+//                activeOverflowItems.add(layoutParams)
+//            } else {
+//                layoutParams = activeOverflowItems.find {
+//                    it.itemId == itemId
+//                } ?: return false
+//                activeOverflowItems.remove(layoutParams)
+//                invisibleOverflowItems.add(layoutParams)
+//            }
+//            requestLayout()
+//            true
+//        }
+//    }
+
     fun setItemVisibility(itemId: Int, isVisible: Boolean): Boolean {
-        var layoutParams = overFlowedItems.find {
+        var layoutParams = activeOverflowItems.find {
             it.itemId == itemId
         }
         if (layoutParams != null) {
@@ -458,7 +544,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
     }
 
     fun setItemEnabled(itemId: Int, isEnabled: Boolean): Boolean {
-        var layoutParams = overFlowedItems.find {
+        var layoutParams = activeOverflowItems.find {
             it.itemId == itemId
         }
         if (layoutParams != null) {
@@ -477,7 +563,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
     }
 
     fun setItemIcon(itemId: Int, icon: Int): Boolean {
-        var layoutParams = overFlowedItems.find {
+        var layoutParams = activeOverflowItems.find {
             it.itemId == itemId
         }
         if (layoutParams != null) {
@@ -496,7 +582,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
     }
 
     fun setItemTitle(itemId: Int, titleRes: Int): Boolean {
-        var layoutParams = overFlowedItems.find {
+        var layoutParams = activeOverflowItems.find {
             it.itemId == itemId
         }
         if (layoutParams != null) {
@@ -575,10 +661,74 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
 
     }
 
+
+    class Builder private constructor() {
+
+        private var item: LayoutParams? = null
+        private var actionBar: ActionBar? = null
+
+        companion object {
+            private val instance = Builder()
+
+            fun init(actionBar: ActionBar): Builder {
+                instance.actionBar = actionBar
+                return instance
+            }
+        }
+
+        fun createItem(id: Int, flags: Int = 0): Builder {
+            if (item != null)
+                instance.build()
+            instance.init(id, flags)
+            return instance
+        }
+
+        private fun init(id: Int, flags: Int) {
+            item = LayoutParams(id)
+            item!!.flags = flags
+        }
+
+        fun title(title: Int): Builder {
+            item!!.title = title
+            return this
+        }
+
+        fun icon(icon: Int): Builder {
+            item!!.icon = icon
+            return this
+        }
+
+        fun enabled(enabled: Boolean): Builder {
+            item!!.isEnabled = enabled
+            return this
+        }
+
+        fun visibility(visible: Boolean): Builder {
+            item!!.isVisible = visible
+            return this
+        }
+
+        fun build() {
+            if (item!!.flags == 0)
+                actionBar!!.addOverFlowItem(item!!)
+            else {
+                actionBar!!.setItemClickListener(item!!)
+                actionBar!!.addView(
+                    item!!.getView(actionBar!!.context, item!!.icon != 0),
+                    actionBar!!.childCount - 1,
+                    item
+                )
+                if (item!!.flags and LayoutParams.SEARCH != 0)
+                    actionBar!!.addSearch()
+            }
+            item = null
+        }
+    }
+
     class LayoutParams(var itemId: Int) :
         ViewGroup.LayoutParams(WRAP_CONTENT, WRAP_CONTENT) {
         companion object {
-            const val SHOW_AS_ACTION_IF_ROOM = 0x1
+            const val SHOW_AS_ACTION_IF_ROOM = 0b1
             const val SHOW_AS_ACTION_ALWAYS = 0b10
             const val SEARCH = 0b100
         }
@@ -604,7 +754,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         var isVisible = true
             set(value) {
                 field = value
-                view?.isVisible = field
+                if (flags != 0 || flags == SEARCH)
+                    view?.isVisible = field
             }
         var isEnabled = true
             set(value) {
@@ -648,8 +799,6 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             }
         }
 
-        fun showAsActionIfRoom(): Boolean = flags == SHOW_AS_ACTION_IF_ROOM
-        fun showAsActionAlways(): Boolean = flags == SHOW_AS_ACTION_ALWAYS
     }
 
     interface ActionListener {

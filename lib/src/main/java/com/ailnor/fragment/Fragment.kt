@@ -251,7 +251,7 @@ abstract class Fragment : LifecycleOwner {
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false
     ) {
-        parentLayout?.presentScreen(screen, removeLast, forceWithoutAnimation)
+        parentLayout?.presentFragment(screen, removeLast, forceWithoutAnimation)
     }
 
     fun nextScreen(

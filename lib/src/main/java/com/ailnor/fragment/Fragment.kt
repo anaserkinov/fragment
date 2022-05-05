@@ -38,7 +38,7 @@ abstract class Fragment : LifecycleOwner {
     private var finishing = false
     protected var hasToolbar = true
     var groupId = -1
-    var id = -1
+    var fragmentId = -1
 
     val context: Context
         get() = parentLayout!!.context
@@ -252,7 +252,7 @@ abstract class Fragment : LifecycleOwner {
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false
     ) {
-        parentLayout?.presentScreen(screen, removeLast, forceWithoutAnimation)
+        parentLayout?.presentFragment(screen, removeLast, forceWithoutAnimation)
     }
 
     fun nextScreen(

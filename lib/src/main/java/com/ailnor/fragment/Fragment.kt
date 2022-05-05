@@ -80,6 +80,7 @@ abstract class Fragment : LifecycleOwner {
                 }
                 if (hasToolbar && parentLayout != null && actionBar == null) {
                     actionBar = createActionBar(parentLayout!!.context)
+                    setUpActionBar(requiredActionBar)
                     requiredActionBar.actionListener = object: ActionBar.ActionListener{
                         override fun onAction(action: Int) {
                             onOptionsItemSelected(action)
@@ -185,7 +186,7 @@ abstract class Fragment : LifecycleOwner {
         return true
     }
 
-    open fun onScreenDestroy() {
+    open fun onFragmentDestroy() {
         isFinished = true
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     }
@@ -194,8 +195,8 @@ abstract class Fragment : LifecycleOwner {
         return ActionBar(context)
     }
 
-    protected open fun setActionBarNavigationType(type: Int){
-        requiredActionBar.setTitle(type)
+    open fun setUpActionBar(actionBar: ActionBar){
+
     }
 
     open fun onConfigurationChanged(newConfig: Configuration?) {}
@@ -252,7 +253,7 @@ abstract class Fragment : LifecycleOwner {
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false
     ) {
-        parentLayout?.presentFragment(screen, removeLast, forceWithoutAnimation)
+        parentLayout?.presentFragmentGroup(screen, removeLast, forceWithoutAnimation)
     }
 
     fun nextScreen(
@@ -260,7 +261,7 @@ abstract class Fragment : LifecycleOwner {
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false
     ) {
-        parentLayout?.nextScreen(screen, removeLast)
+        parentLayout?.nextScreen(screen, removeLast, forceWithoutAnimation)
     }
 
     fun presentScreenAsSheet(screen: Fragment) {

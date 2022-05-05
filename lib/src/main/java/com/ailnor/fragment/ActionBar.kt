@@ -292,15 +292,14 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                     }
                     child.measure(measureSpec_unspecified, measureSpec_unspecified)
                     leftSpace = width - child.measuredWidth
-                    if (leftSpace <= 0) {
+                    if (leftSpace <= realWidth/2) {
                         if (i != actionStartIndex) {
                             var index = actionStartIndex + 1
                             while (leftSpace < dp(48) && index < childCount) {
                                 val preChild = getChildAt(i - 1)
                                 preChild.visibility = View.GONE
-                                //                                if ((preChild.layoutParams as LayoutParams).flags and LayoutParams.SHOW_AS_ACTION_ALWAYS == 0)
-//                                    activeOverflowItems.add(preChild.layoutParams as LayoutParams)
-                                activeOverflowItems.add(preChild.layoutParams as LayoutParams)
+                                if ((preChild.layoutParams as LayoutParams).flags and LayoutParams.SHOW_AS_ACTION_ALWAYS == 0)
+                                    activeOverflowItems.add(preChild.layoutParams as LayoutParams)
                                 leftSpace += preChild.measuredWidth
                                 index++
                             }
@@ -405,7 +404,9 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         titleRes: Int = 0,
         flags: Int = 0
     ): LayoutParams {
-        val layoutParams = LayoutParams(itemId, titleRes, iconRes)
+        val layoutParams = LayoutParams(itemId)
+        layoutParams.title = titleRes
+        layoutParams.icon = iconRes
         layoutParams.flags = flags
         if (flags == 0)
             activeOverflowItems.add(layoutParams)
@@ -474,8 +475,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         addView(editText, 0)
     }
 
-    fun setItemClickListener(layoutParams: LayoutParams) {
-        layoutParams.getView(context, layoutParams.icon != 0).setOnClickListener {
+    fun setItemClickListener(view: View, layoutParams: LayoutParams) {
+        view.setOnClickListener {
             if (layoutParams.flags and LayoutParams.SEARCH == 0)
                 actionListener.onAction(layoutParams.itemId)
             else {
@@ -495,53 +496,53 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
     }
 
 
-//    fun setItemVisibility(itemId: Int, isVisible: Boolean): Boolean {
-//        var layoutParams = children.find {
-//            it.layoutParams is LayoutParams && (it.layoutParams as LayoutParams).itemId == itemId
-//        }?.layoutParams as? LayoutParams
-//
-//        return if (layoutParams != null) {
-//            layoutParams.isVisible = isVisible
-//            if (!isVisible && activeOverflowItems.contains(layoutParams))
-//                activeOverflowItems.remove(layoutParams)
-//            true
-//        } else {
-//            if (isVisible) {
-//                layoutParams = invisibleOverflowItems.find {
-//                    it.itemId == itemId
-//                } ?: return false
-//                invisibleOverflowItems.remove(layoutParams)
-//                activeOverflowItems.add(layoutParams)
-//            } else {
-//                layoutParams = activeOverflowItems.find {
-//                    it.itemId == itemId
-//                } ?: return false
-//                activeOverflowItems.remove(layoutParams)
-//                invisibleOverflowItems.add(layoutParams)
-//            }
-//            requestLayout()
-//            true
-//        }
-//    }
-
     fun setItemVisibility(itemId: Int, isVisible: Boolean): Boolean {
-        var layoutParams = activeOverflowItems.find {
-            it.itemId == itemId
-        }
-        if (layoutParams != null) {
-            layoutParams.isVisible = isVisible
-            if (layoutParams.flags == 0)
-                return true
-        }
-        layoutParams = children.find {
+        var layoutParams = children.find {
             it.layoutParams is LayoutParams && (it.layoutParams as LayoutParams).itemId == itemId
         }?.layoutParams as? LayoutParams
+
         return if (layoutParams != null) {
             layoutParams.isVisible = isVisible
+            if (!isVisible && activeOverflowItems.contains(layoutParams))
+                activeOverflowItems.remove(layoutParams)
             true
-        } else
-            false
+        } else {
+            if (isVisible) {
+                layoutParams = invisibleOverflowItems.find {
+                    it.itemId == itemId
+                } ?: return false
+                invisibleOverflowItems.remove(layoutParams)
+                activeOverflowItems.add(layoutParams)
+            } else {
+                layoutParams = activeOverflowItems.find {
+                    it.itemId == itemId
+                } ?: return false
+                activeOverflowItems.remove(layoutParams)
+                invisibleOverflowItems.add(layoutParams)
+            }
+            requestLayout()
+            true
+        }
     }
+
+//    fun setItemVisibility(itemId: Int, isVisible: Boolean): Boolean {
+//        var layoutParams = activeOverflowItems.find {
+//            it.itemId == itemId
+//        }
+//        if (layoutParams != null) {
+//            layoutParams.isVisible = isVisible
+//            if (layoutParams.flags == 0)
+//                return true
+//        }
+//        layoutParams = children.find {
+//            it.layoutParams is LayoutParams && (it.layoutParams as LayoutParams).itemId == itemId
+//        }?.layoutParams as? LayoutParams
+//        return if (layoutParams != null) {
+//            layoutParams.isVisible = isVisible
+//            true
+//        } else
+//            false
+//    }
 
     fun setItemEnabled(itemId: Int, isEnabled: Boolean): Boolean {
         var layoutParams = activeOverflowItems.find {
@@ -610,7 +611,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             } else
                 TextView(context)
             if (item?.title != null)
-                textView.setText(item.title!!)
+                textView.setText(item.title)
             textView.maxLines = 1
             textView.setPadding(dp(8))
             return textView
@@ -662,13 +663,13 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
     }
 
 
-    class Builder private constructor() {
+    class Builder {
 
         private var item: LayoutParams? = null
         private var actionBar: ActionBar? = null
 
         companion object {
-            private val instance = Builder()
+            val instance = Builder()
 
             fun init(actionBar: ActionBar): Builder {
                 instance.actionBar = actionBar
@@ -678,9 +679,9 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
 
         fun createItem(id: Int, flags: Int = 0): Builder {
             if (item != null)
-                instance.build()
-            instance.init(id, flags)
-            return instance
+                build()
+            init(id, flags)
+            return this
         }
 
         private fun init(id: Int, flags: Int) {
@@ -712,9 +713,10 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             if (item!!.flags == 0)
                 actionBar!!.addOverFlowItem(item!!)
             else {
-                actionBar!!.setItemClickListener(item!!)
+                val view = item!!.getView(actionBar!!.context, item!!.icon != 0)
+                actionBar!!.setItemClickListener(view, item!!)
                 actionBar!!.addView(
-                    item!!.getView(actionBar!!.context, item!!.icon != 0),
+                    view,
                     actionBar!!.childCount - 1,
                     item
                 )
@@ -733,19 +735,14 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             const val SEARCH = 0b100
         }
 
-        constructor(id: Int, title: Int?, icon: Int?) : this(id) {
-            this.title = title
-            this.icon = icon
-        }
-
         private var view: View? = null
-        var icon: Int? = null
+        var icon: Int = 0
             set(value) {
                 field = value
                 if (view is ImageView && icon != null)
                     (view as ImageView).setImageResource(icon!!)
             }
-        var title: Int? = null
+        var title: Int = 0
             set(value) {
                 field = value
                 if (view is TextView && title != null)
@@ -779,8 +776,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                     return view!!
                 val imageView = ImageView(context)
                 imageView.setPadding(dp(12))
-                if (icon != null)
-                    imageView.setImageResource(icon!!)
+                if (icon != 0)
+                    imageView.setImageResource(icon)
                 imageView.colorFilter = PorterDuffColorFilter(Theme.black, PorterDuff.Mode.SRC_IN)
                 imageView.background = makeCircleRippleDrawable()
                 view = imageView
@@ -791,8 +788,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                 val textView = TextView(context)
                 textView.textSize = 14f
                 textView.setPadding(dp(8))
-                if (title != null)
-                    textView.setText(title!!)
+                if (title != 0)
+                    textView.setText(title)
                 textView.background = makeRippleDrawable()
                 view = textView
                 textView

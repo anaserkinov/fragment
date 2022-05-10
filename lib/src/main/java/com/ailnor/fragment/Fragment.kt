@@ -205,6 +205,9 @@ abstract class Fragment : LifecycleOwner {
     open fun onResume() {}
     open fun onPause() {}
 
+    open fun onPreResume() {}
+    open fun onPrePause() {}
+
     fun resume() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)

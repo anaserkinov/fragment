@@ -6,6 +6,7 @@ package com.ailnor.fragment
 
 import android.content.Context
 import android.graphics.*
+import android.graphics.drawable.Drawable
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -13,11 +14,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.annotation.StringRes
+import androidx.appcompat.graphics.drawable.DrawerArrowDrawable
 import androidx.appcompat.widget.ListPopupWindow
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import androidx.core.view.setPadding
 import com.ailnor.core.*
+import com.ailnor.core.R
+import org.w3c.dom.Text
 import kotlin.math.max
 
 
@@ -33,6 +37,13 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         const val ITEM_OVER_FLOW = -7
     }
 
+    private val back_home_Drawable by lazy {
+        DrawerArrowDrawable(context)
+    }
+    private val crossDrawable by lazy {
+        context.resources.getDrawable(R.drawable._ic_cross, null).mutate()
+    }
+
     private var navigationView: BadgeImageView? = null
     private var contentView: View? = null
     var editText: EditText? = null
@@ -43,6 +54,20 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
     private var adapter: Adapter? = null
     private val activeOverflowItems = arrayListOf<LayoutParams>()
     private val invisibleOverflowItems = arrayListOf<LayoutParams>()
+
+    var color = Theme.black
+        set(value) {
+            field = value
+            if (navigationView != null) {
+                if (navigationView!!.drawable is DrawerArrowDrawable)
+                    (navigationView!!.drawable as DrawerArrowDrawable).color = color
+                else
+                    navigationView!!.drawable.setTint(color)
+            }
+            if (contentView is TextView)
+                (contentView as TextView).setTextColor(value)
+            overFlowView.colorFilter = PorterDuffColorFilter(value, PorterDuff.Mode.SRC_IN)
+        }
 
     private val listPopup by lazy {
         val popupMenu = ListPopupWindow(context)
@@ -110,12 +135,21 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                 }
                 addView(navigationView, 0)
             }
-            if (value == HOME)
-                navigationView!!.setImageDrawable(Theme.homeNavigationIcon)
-            else if (value == BACK)
-                navigationView!!.setImageDrawable(Theme.backNavigationIcon)
-            else
-                navigationView!!.setImageDrawable(Theme.closeNavigationIcon)
+            navigationView!!.setImageDrawable(
+                if (value == HOME) {
+                    back_home_Drawable.progress = 0f
+                    back_home_Drawable.color = color
+                    back_home_Drawable
+                } else if (value == BACK) {
+                    back_home_Drawable.progress = 1f
+                    back_home_Drawable.color = color
+                    back_home_Drawable
+                } else {
+                    val d = crossDrawable
+                    d.setTint(color)
+                    d
+                }
+            )
         }
 
     init {
@@ -123,9 +157,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
 
         setPadding(dp(4), dp(8), dp(4), dp(8))
 
-        val overFlow =
-            context.resources.getDrawable(com.ailnor.core.R.drawable._ic_over_flow).mutate()
-        overFlow.setTint(Theme.black)
+        val overFlow = context.resources.getDrawable(R.drawable._ic_over_flow).mutate()
+        overFlow.setTint(color)
         overFlowView.setPadding(dp(12))
         overFlowView.setImageDrawable(overFlow)
         overFlowView.background = makeCircleRippleDrawable()
@@ -172,7 +205,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         if (contentView == null) {
             val contentView = TextView(context)
             contentView.textSize = 20f
-            contentView.setTextColor(Theme.black)
+            contentView.setTextColor(color)
             contentView.setTypeface(contentView.typeface, Typeface.BOLD)
             contentView.setPadding(dp(4), 0, dp(4), 0)
             contentView.maxLines = 1
@@ -292,7 +325,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                     }
                     child.measure(measureSpec_unspecified, measureSpec_unspecified)
                     leftSpace = width - child.measuredWidth
-                    if (leftSpace <= realWidth/2) {
+                    if (leftSpace <= realWidth / 2) {
                         if (i != actionStartIndex) {
                             var index = actionStartIndex + 1
                             while (leftSpace < dp(48) && index < childCount) {
@@ -340,20 +373,21 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
 
         setMeasuredDimension(
             realWidth,
-            dp(64)
+            Utilities.statusBarHeight + dp(64)
         )
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         var right = measuredWidth - dp(4)
         var left = dp(4)
+        val top = Utilities.statusBarHeight
 
         if (navigationView?.visibility == View.VISIBLE) {
             navigationView!!.layout(
                 left,
-                (measuredHeight - navigationView!!.measuredHeight) / 2,
+                (measuredHeight + top - navigationView!!.measuredHeight) / 2,
                 left + navigationView!!.measuredWidth,
-                (measuredHeight + navigationView!!.measuredHeight) / 2
+                (measuredHeight + top + navigationView!!.measuredHeight) / 2
             )
             left += navigationView!!.measuredWidth
         }
@@ -362,40 +396,44 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
 
             editText!!.layout(
                 left,
-                (measuredHeight - editText!!.measuredHeight) / 2,
+                (measuredHeight + top - editText!!.measuredHeight) / 2,
                 left + editText!!.measuredWidth,
-                (measuredHeight + editText!!.measuredHeight) / 2
+                (measuredHeight + top + editText!!.measuredHeight) / 2
             )
 
             searchCloseButton!!.layout(
                 editText!!.right,
-                (measuredHeight - searchCloseButton!!.measuredHeight) / 2,
+                (measuredHeight + top - searchCloseButton!!.measuredHeight) / 2,
                 editText!!.right + searchCloseButton!!.measuredWidth,
-                (measuredHeight + searchCloseButton!!.measuredHeight) / 2
+                (measuredHeight + top + searchCloseButton!!.measuredHeight) / 2
             )
         }
 
-        if (contentView?.visibility == View.VISIBLE)
+        val firstActionIndex = if (contentView?.visibility == View.VISIBLE) {
             contentView?.layout(
                 left,
-                (measuredHeight - contentView!!.measuredHeight) / 2,
+                (measuredHeight + top - contentView!!.measuredHeight) / 2,
                 left + contentView!!.measuredWidth,
-                (measuredHeight + contentView!!.measuredHeight) / 2
+                (measuredHeight + top + contentView!!.measuredHeight) / 2
             )
+            indexOfChild(contentView)
+        } else
+            indexOfChild(navigationView)
 
-        if (editText?.visibility != View.VISIBLE)
-            for (i in childCount - 1 downTo indexOfChild(contentView) + 1) {
+        if (editText?.visibility != View.VISIBLE) {
+            for (i in childCount - 1 downTo firstActionIndex + 1) {
                 val child = getChildAt(i)
                 if (child.visibility != View.VISIBLE)
                     continue
                 child.layout(
                     right - child.measuredWidth,
-                    (measuredHeight - child.measuredHeight) / 2,
+                    (measuredHeight + top - child.measuredHeight) / 2,
                     right,
-                    (measuredHeight + child.measuredHeight) / 2
+                    (measuredHeight + top + child.measuredHeight) / 2
                 )
                 right = child.left
             }
+        }
     }
 
     fun addMenuItem(
@@ -670,7 +708,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         private var actionBar: ActionBar? = null
 
         companion object {
-            val instance = Builder()
+            private val instance = Builder()
 
             fun init(actionBar: ActionBar): Builder {
                 instance.actionBar = actionBar
@@ -740,14 +778,14 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         var icon: Int = 0
             set(value) {
                 field = value
-                if (view is ImageView && icon != null)
-                    (view as ImageView).setImageResource(icon!!)
+                if (view is ImageView && icon != 0)
+                    (view as ImageView).setImageResource(icon)
             }
         var title: Int = 0
             set(value) {
                 field = value
-                if (view is TextView && title != null)
-                    (view as TextView).setText(value!!)
+                if (view is TextView && title != 0)
+                    (view as TextView).setText(value)
             }
         var isVisible = true
             set(value) {
@@ -808,5 +846,4 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         fun onSearchExpanded()
         fun onSearchCollapsed()
     }
-
 }

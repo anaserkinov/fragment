@@ -158,7 +158,7 @@ abstract class Fragment : LifecycleOwner {
             return
         }
         finishing = true
-        parentLayout!!.closeLastScreen(animated)
+        parentLayout!!.closeLastFragment(animated)
     }
 
     open fun removeSelfFromStack() {
@@ -189,6 +189,13 @@ abstract class Fragment : LifecycleOwner {
     open fun onFragmentDestroy() {
         isFinished = true
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    }
+
+    fun reCreate(){
+        lifecycleRegistry = LifecycleRegistry(this)
+        isFinished = false
+        finishing = false
+        isPaused = true
     }
 
     open fun createActionBar(context: Context): ActionBar {
@@ -251,7 +258,7 @@ abstract class Fragment : LifecycleOwner {
 
     internal open fun onRemoveFromParent() {}
 
-    fun presentScreen(
+    fun presentFragment(
         screen: Fragment,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false

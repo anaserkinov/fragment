@@ -62,11 +62,13 @@ class BottomSheet(private val screen: Fragment? = null) : BottomSheetDialogFragm
 
     override fun onResume() {
         super.onResume()
+        screen?.onPreResume()
         screen?.resume()
     }
 
     override fun onPause() {
         super.onPause()
+        screen?.onPrePause()
         screen?.pause()
     }
 

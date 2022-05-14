@@ -976,6 +976,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         if (forceWithoutAnimation) {
             containerView.translationX = 0f
+            containerView.alpha = 1f
             containerViewBack.visibility = GONE
             containerView.visibility = View.VISIBLE
             bringChildToFront(containerView)

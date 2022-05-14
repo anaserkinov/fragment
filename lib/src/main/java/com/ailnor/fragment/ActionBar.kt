@@ -478,7 +478,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                     editText!!.text.clear()
                 }
                 searchCloseButton!!.setImageDrawable(
-                    com.ailnor.core.R.drawable._ic_cross.coloredDrawable(
+                    R.drawable._ic_cross.coloredDrawable(
                         Theme.black
                     )
                 )
@@ -504,7 +504,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             editText!!.text.clear()
         }
         searchCloseButton!!.setImageDrawable(
-            com.ailnor.core.R.drawable._ic_cross.coloredDrawable(
+            R.drawable._ic_cross.coloredDrawable(
                 Theme.black
             )
         )
@@ -543,6 +543,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             layoutParams.isVisible = isVisible
             if (!isVisible && activeOverflowItems.contains(layoutParams))
                 activeOverflowItems.remove(layoutParams)
+            requestLayout()
             true
         } else {
             if (isVisible) {
@@ -619,26 +620,6 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         } else
             false
     }
-
-    fun setItemTitle(itemId: Int, titleRes: Int): Boolean {
-        var layoutParams = activeOverflowItems.find {
-            it.itemId == itemId
-        }
-        if (layoutParams != null) {
-            layoutParams.title = titleRes
-            if (layoutParams.flags == 0)
-                return true
-        }
-        layoutParams = children.find {
-            it.layoutParams is LayoutParams && (it.layoutParams as LayoutParams).itemId == itemId
-        }?.layoutParams as? LayoutParams
-        return if (layoutParams != null) {
-            layoutParams.title = titleRes
-            true
-        } else
-            false
-    }
-
 
     class Adapter(context: Context) : ArrayAdapter<LayoutParams>(context, 0, arrayListOf()) {
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {

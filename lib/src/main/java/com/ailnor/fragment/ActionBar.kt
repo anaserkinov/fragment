@@ -267,8 +267,10 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         var width = realWidth
         var actionStartIndex = if (editText != null)
             3
-        else
+        else if (contentView != null)
             1
+        else
+            0
 
         if (navigationView?.visibility == View.VISIBLE) {
             navigationView!!.measure(

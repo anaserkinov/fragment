@@ -38,6 +38,7 @@ abstract class Fragment : LifecycleOwner {
     private var finishing = false
     protected var hasToolbar = true
     var groupId = -1
+    var innerGroupId = -1
     var fragmentId = -1
 
     val context: Context
@@ -272,6 +273,13 @@ abstract class Fragment : LifecycleOwner {
         forceWithoutAnimation: Boolean = false
     ) {
         parentLayout?.nextScreen(screen, removeLast, forceWithoutAnimation)
+    }
+
+    fun nextScreenInnerGroup(
+        screen: Fragment,
+        forceWithoutAnimation: Boolean = false
+    ) {
+        parentLayout?.nextScreenInnerGroup(screen, forceWithoutAnimation)
     }
 
     fun presentScreenAsSheet(screen: Fragment) {

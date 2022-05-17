@@ -438,12 +438,18 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         }
     }
 
+    @Deprecated("User ActionBar.Builder")
     fun addMenuItem(
         itemId: Int,
         iconRes: Int,
         titleRes: Int = 0,
         flags: Int = 0
-    ): LayoutParams {
+    ): LayoutParams{
+        return Builder.init(this)
+            .createItem(itemId, flags)
+            .title(titleRes)
+            .icon(iconRes)
+            .temp_build()
         val layoutParams = LayoutParams(itemId)
         layoutParams.title = titleRes
         layoutParams.icon = iconRes
@@ -489,7 +495,6 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                 addView(editText, 0)
             }
         }
-        return layoutParams
     }
 
     fun addSearch() {
@@ -746,6 +751,12 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                     actionBar!!.addSearch()
             }
             item = null
+        }
+
+        internal fun temp_build(): LayoutParams{
+            val temp = item!!
+            build()
+            return temp
         }
     }
 

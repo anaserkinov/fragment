@@ -333,7 +333,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                             while (leftSpace < dp(48) && index < childCount) {
                                 val preChild = getChildAt(i - 1)
                                 preChild.visibility = View.GONE
-                                if ((preChild.layoutParams as LayoutParams).flags and LayoutParams.SHOW_AS_ACTION_ALWAYS == 0)
+                                val preChildParams = preChild.layoutParams as LayoutParams
+                                if (preChildParams.flags and LayoutParams.SHOW_AS_ACTION_ALWAYS == 0 && !activeOverflowItems.contains(preChildParams))
                                     activeOverflowItems.add(preChild.layoutParams as LayoutParams)
                                 leftSpace += preChild.measuredWidth
                                 index++
@@ -341,9 +342,10 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                             if (leftSpace < dp(48))
                                 width -= dp(48) - leftSpace
                         }
-                        if (layoutParams.flags == LayoutParams.SHOW_AS_ACTION_IF_ROOM) {
+                        if (layoutParams.flags and LayoutParams.SHOW_AS_ACTION_IF_ROOM != 0) {
                             child.visibility = GONE
-                            activeOverflowItems.add(layoutParams)
+                            if (!activeOverflowItems.contains(layoutParams))
+                                activeOverflowItems.add(layoutParams)
                         }
                         leftSpace = 0
                     } else {
@@ -444,7 +446,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         iconRes: Int,
         titleRes: Int = 0,
         flags: Int = 0
-    ): LayoutParams{
+    ): LayoutParams {
         return Builder.init(this)
             .createItem(itemId, flags)
             .title(titleRes)
@@ -753,7 +755,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             item = null
         }
 
-        internal fun temp_build(): LayoutParams{
+        internal fun temp_build(): LayoutParams {
             val temp = item!!
             build()
             return temp

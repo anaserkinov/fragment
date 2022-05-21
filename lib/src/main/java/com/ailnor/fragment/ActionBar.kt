@@ -6,7 +6,6 @@ package com.ailnor.fragment
 
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.Drawable
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -21,7 +20,6 @@ import androidx.core.view.isVisible
 import androidx.core.view.setPadding
 import com.ailnor.core.*
 import com.ailnor.core.R
-import org.w3c.dom.Text
 import kotlin.math.max
 
 

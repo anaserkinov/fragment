@@ -88,6 +88,7 @@ abstract class Fragment : LifecycleOwner {
                         }
                     }
                     onCreateOptionsMenu()
+                    onCreateOptionsMenu(ActionBar.Builder.init(actionBar!!))
                 }
             }
         }
@@ -332,6 +333,10 @@ abstract class Fragment : LifecycleOwner {
     }
 
     open fun onCreateOptionsMenu() {}
+
+    open fun onCreateOptionsMenu(builder: ActionBar.Builder) {
+
+    }
 
     @CallSuper
     protected open fun onOptionsItemSelected(menuId: Int): Boolean {

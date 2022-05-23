@@ -100,7 +100,7 @@ abstract class Fragment : LifecycleOwner {
             else
                 viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         }
-    val screenView: View
+    val fragmentView: View
         get() = savedView!!
     protected var isPaused = true
         set(value) {

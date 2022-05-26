@@ -163,6 +163,10 @@ abstract class Fragment : LifecycleOwner {
         parentLayout!!.closeLastFragment(animated)
     }
 
+    fun popScreensFromStack(count: Int, removeLatest: Boolean){
+        parentLayout?.popScreensFromStack(count, removeLatest)
+    }
+
     open fun removeSelfFromStack() {
         if (isFinished || parentLayout == null) {
             return
@@ -177,7 +181,7 @@ abstract class Fragment : LifecycleOwner {
     open fun onAttackToContext(context: Context){}
 
     @CallSuper
-    open fun onScreenCreate(): Boolean {
+    open fun onFragmentCreate(): Boolean {
         lifecycleRegistry.addObserver(object : LifecycleEventObserver {
             override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
                 if (event == Lifecycle.Event.ON_STOP)

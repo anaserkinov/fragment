@@ -39,7 +39,7 @@ class BottomSheet(private val screen: Fragment? = null) : BottomSheetDialogFragm
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        screen?.onScreenCreate()
+        screen?.onFragmentCreate()
     }
 
     override fun onCreateView(

@@ -947,7 +947,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         removeLast: Boolean,
         forceWithoutAnimation: Boolean
     ): Boolean {
-        if (!fragment.onScreenCreate())
+        if (!fragment.onFragmentCreate())
             return false
 
         if (parentActivity.currentFocus != null && fragment.hideKeyboardOnShow())
@@ -1101,7 +1101,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         removeLast: Boolean,
         forceWithoutAnimation: Boolean
     ): Boolean {
-        if (!fragment.onScreenCreate()) {
+        if (!fragment.onFragmentCreate()) {
             return false
         }
 
@@ -1158,7 +1158,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     fun addFragmentToStack(screen: Fragment, newGroup: Boolean, position: Int): Boolean {
-        if (!screen.onScreenCreate()) {
+        if (!screen.onFragmentCreate()) {
             return false
         }
         if (newGroup)

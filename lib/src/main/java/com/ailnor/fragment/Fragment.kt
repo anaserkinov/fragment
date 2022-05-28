@@ -287,7 +287,7 @@ abstract class Fragment : LifecycleOwner {
         parentLayout?.nextScreenInnerGroup(screen, forceWithoutAnimation)
     }
 
-    fun presentScreenAsSheet(screen: Fragment) {
+    fun presentFragmentAsSheet(screen: Fragment) {
         parentLayout?.presentAsSheet(screen)
     }
 

@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Bundle
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.CallSuper
@@ -321,6 +322,16 @@ abstract class Fragment : LifecycleOwner {
         } else null
     }
 
+    open fun canBeginSlide(): Boolean {
+        return true
+    }
+
+    open fun onBeginSlide(){}
+
+    open fun isSwipeBackEnabled(ev: MotionEvent): Boolean {
+        return true
+    }
+
     open fun onSlideProgress(isOpen: Boolean, progress: Float) {}
 
     open fun onTransitionAnimationProgress(isOpen: Boolean, progress: Float) {}
@@ -402,6 +413,7 @@ abstract class Fragment : LifecycleOwner {
     }
 
     open fun onGetFirstInStack() {}
+
 
 
 }

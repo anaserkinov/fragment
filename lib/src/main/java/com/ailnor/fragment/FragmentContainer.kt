@@ -5,23 +5,27 @@
 package com.ailnor.fragment
 
 import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
 import android.os.Build
-import android.view.View
-import android.view.ViewGroup
-import android.view.WindowInsets
+import android.util.Log
+import android.view.*
 import android.view.animation.Animation
+import android.view.animation.AnimationSet
 import android.view.animation.Transformation
 import android.widget.FrameLayout
+import android.widget.OverScroller
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.interpolator.view.animation.FastOutLinearInInterpolator
 import com.ailnor.core.*
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import kotlin.math.abs
+import kotlin.math.max
 
 class FragmentContainer(context: Context) : FrameLayout(context) {
 
@@ -29,6 +33,15 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private var inAnimation = false
     private var isKeyboardVisible = false
     private val rect = Rect()
+
+    private var velocityTracker: VelocityTracker? = null
+    private var startedTrackingX = 0
+    private var startedTrackingY = 0
+    private var startedTracking = false
+    private var maybeStartedTracking = false
+    private var beginTrackingSent = false
+    private var startedTrackingPointerId = -1
+
 
     companion object {
         const val FROM_RIGHT = 1
@@ -105,7 +118,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 }
             }
         }
-
     }
 
     private inner class GroupContainer(context: Context) : FrameLayout(context) {
@@ -306,7 +318,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 waitingForKeyboardCloseRunnable = null
             }
         }
-
 
         fun nextScreen(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
             if (forceWithoutAnimation) {
@@ -856,6 +867,120 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             }
         }
         systemUiVisibility = SYSTEM_UI_FLAG_LAYOUT_STABLE or SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+
+    }
+
+    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
+        return inAnimation || onTouchEvent(ev)
+    }
+
+    override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
+        onTouchEvent(null)
+        super.requestDisallowInterceptTouchEvent(disallowIntercept)
+    }
+
+    override fun onTouchEvent(ev: MotionEvent?): Boolean {
+        if (!inAnimation){
+            if (fragmentStack.size > 1){
+                if (ev == null){
+                    startedTrackingX = 0
+                    startedTrackingY = 0
+                    startedTracking = false
+                    maybeStartedTracking = false
+                    if (velocityTracker != null) {
+                        velocityTracker!!.recycle()
+                        velocityTracker = null
+                    }
+                    return false
+                } else {
+                    if (ev.action == MotionEvent.ACTION_DOWN){
+                        maybeStartedTracking = true
+                        startedTrackingPointerId = ev.getPointerId(0)
+                        startedTrackingX = ev.x.toInt()
+                        startedTrackingY = ev.y.toInt()
+                        if (velocityTracker == null)
+                            velocityTracker = VelocityTracker.obtain()
+                        else
+                            velocityTracker!!.clear()
+                        velocityTracker!!.addMovement(ev)
+                    } else if (ev.action == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId){
+                        if (velocityTracker == null)
+                            velocityTracker = VelocityTracker.obtain()
+                        val dx = max(0, (ev.x - startedTrackingX).toInt())
+                        val dy = abs(ev.y - startedTrackingY)
+                        velocityTracker!!.addMovement(ev)
+
+                        if (maybeStartedTracking && !startedTracking && dx >= Utilities.getPixelsInCM(0.4f,true) && abs(dx)/3 > dy){
+                            val currentFragment = fragmentStack[fragmentStack.size - 1]
+                            if (currentFragment.canBeginSlide() && findScrollingChild(this, ev.x, ev.y) == null)
+                                prepareForMoving(ev)
+                            else
+                                maybeStartedTracking = false
+                        } else if (startedTracking) {
+                            if (!beginTrackingSent) {
+                                hideKeyboard()
+                                fragmentStack[fragmentStack.size - 1].onBeginSlide()
+                                beginTrackingSent = true
+                            }
+                            containerView.translationX = dx.toFloat()
+                        }
+                    } else if (ev.getPointerId(0) == startedTrackingPointerId && (ev.action == MotionEvent.ACTION_UP || ev.action == MotionEvent.ACTION_CANCEL || ev.action == MotionEvent.ACTION_POINTER_UP)){
+                        if (velocityTracker == null)
+                            velocityTracker = VelocityTracker.obtain()
+                        velocityTracker!!.computeCurrentVelocity(1000)
+                        val currentFragment = fragmentStack[fragmentStack.size - 1]
+                        if (!startedTracking && currentFragment.isSwipeBackEnabled(ev)){
+                            val velX = velocityTracker!!.xVelocity
+                            val velY = velocityTracker!!.yVelocity
+                            if (velX >= 3500 && velX > abs(velY) && currentFragment.canBeginSlide()){
+                                prepareForMoving(ev)
+                                if (!beginTrackingSent){
+                                    hideKeyboard()
+                                    beginTrackingSent = true
+                                }
+                            }
+                        }
+                        if (startedTracking){
+                            val x = containerView.x
+                            val animatorSet = AnimatorSet()
+                            val velX = velocityTracker!!.xVelocity
+                            val velY = velocityTracker!!.yVelocity
+                            val backAnimation  = x < containerView.measuredWidth / 3f && (velX < 3500 || velX < velY)
+                            val distToMove: Float
+                            if (backAnimation) {
+                                distToMove = x
+                                val duration = max((200f/containerView.measuredWidth * distToMove).toLong(), 50)
+                                animatorSet.playTogether(
+                                    ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, 0f).setDuration(duration)
+                                )
+                            } else {
+                                distToMove = containerView.measuredWidth - x
+                                val duration = max((200/containerView.measuredWidth * distToMove).toLong(), 50)
+                                animatorSet.playTogether(
+                                    ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, containerView.measuredWidth.toFloat()).setDuration(duration)
+                                )
+                            }
+                            animatorSet.addListener(object: AnimatorListenerAdapter(){
+                                override fun onAnimationEnd(animation: Animator?) {
+                                    onslideAnimationEnd(backAnimation)
+                                }
+                            })
+                            animatorSet.start()
+                            inAnimation = true
+                        } else {
+                            maybeStartedTracking = false
+                        }
+                        if (velocityTracker != null){
+                            velocityTracker!!.recycle()
+                            velocityTracker = null
+                        }
+                    }
+                }
+            }
+            return startedTracking
+        }
+
+        return false
     }
 
     private fun resumeFragment(fragment: Fragment, inFirst: Boolean) {
@@ -916,6 +1041,59 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         fragmentStack.remove(fragment)
     }
 
+    private fun prepareForMoving(ev: MotionEvent){
+        maybeStartedTracking = false
+        startedTracking = true
+        startedTrackingX = ev.x.toInt()
+        containerViewBack.visibility = View.VISIBLE
+        beginTrackingSent = false
+
+        val lastFragment = fragmentStack[fragmentStack.size - 2]
+        var screenView = lastFragment.savedView
+        if (screenView != null) {
+            val parent = screenView.parent as? ViewGroup
+            if (parent != null) {
+                lastFragment.onRemoveFromParent()
+                parent.removeView(screenView)
+            }
+        } else
+            screenView = lastFragment.createView(context)
+        lastFragment.onViewCreated()
+
+        if (lastFragment.actionBar != null && lastFragment.requiredActionBar.shouldAddToContainer) {
+            val parent = lastFragment.requiredActionBar.parent as? ViewGroup
+            parent?.removeView(lastFragment.actionBar)
+            containerViewBack.addGroup(screenView, lastFragment.requiredActionBar)
+        } else
+            containerViewBack.addGroup(screenView, null)
+
+        resumeFragment(lastFragment, false)
+    }
+
+    private fun onslideAnimationEnd(backAnimation: Boolean){
+        if(!backAnimation){
+            if (fragmentStack.size < 2)
+                return
+
+            finishFragment(fragmentStack[fragmentStack.size - 1])
+
+            val temp = containerView
+            containerView = containerViewBack
+            containerViewBack = temp
+            bringChildToFront(containerView)
+
+            val newFragment = fragmentStack[fragmentStack.size - 1]
+            newFragment.resume()
+            newFragment.onBecomeFullyVisible()
+        } else if (fragmentStack.size >= 2) {
+            pauseFragment(fragmentStack[fragmentStack.size - 2])
+        }
+        containerViewBack.visibility = View.GONE
+        startedTracking = false
+        inAnimation = false
+        containerView.translationX = 0f
+        containerViewBack.translationX = 0f
+    }
 
     fun presentFragmentGroup(
         screen: Fragment,
@@ -1455,12 +1633,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             fragmentStack[fragmentStack.size - 1].pause()
     }
 
-    fun getLastFragment(): Fragment? {
-        return if (fragmentStack.isEmpty()) {
-            null
-        } else fragmentStack[fragmentStack.size - 1]
-    }
-
     fun onOrientationChanged() {
         if (fragmentStack.isNotEmpty()) {
             fragmentStack.forEach {
@@ -1537,6 +1709,28 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         } else
             return true
         return false
+    }
+
+    private fun findScrollingChild(parent: ViewGroup, x: Float, y: Float): View? {
+        val n = parent.childCount
+        for (i in 0 until n) {
+            val child = parent.getChildAt(i)
+            if (child.visibility != VISIBLE) {
+                continue
+            }
+            child.getHitRect(rect)
+            if (rect.contains(x.toInt(), y.toInt())) {
+                if (child.canScrollHorizontally(-1)) {
+                    return child
+                } else if (child is ViewGroup) {
+                    val v = findScrollingChild(child, x - rect.left, y - rect.top)
+                    if (v != null) {
+                        return v
+                    }
+                }
+            }
+        }
+        return null
     }
 
 

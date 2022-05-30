@@ -51,8 +51,16 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private class Container(context: Context) : FrameLayout(context) {
 
+        var weight = 1f
+        var leftOffset = 0
+
         init {
             setBackgroundColor(Theme.white)
+        }
+
+        fun updateParams(weight: Float, leftOffset: Int) {
+            this.weight = weight
+            this.leftOffset = leftOffset
         }
 
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -129,15 +137,13 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         private var animationType = FROM_RIGHT
 
         init {
-            addView(leftFrame, Params(1f, 0))
+            addView(leftFrame)
         }
 
         fun addGroup(view: View, actionBar: ActionBar?) {
-            if (rightFrame != null)
-                (rightFrame!!.layoutParams as Params).update(0f, 0)
-            if (frame != null)
-                (frame!!.layoutParams as Params).update(0f, 0)
-            (leftFrame.layoutParams as Params).update(1f, 0)
+            rightFrame?.updateParams(0f, 0)
+            frame?.updateParams(0f, 0)
+            leftFrame.updateParams(1f, 0)
             requestLayout()
             leftFrame.addView(view)
             if (actionBar != null)
@@ -148,57 +154,49 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             val height = MeasureSpec.getSize(heightMeasureSpec)
             val width = MeasureSpec.getSize(widthMeasureSpec)
 
-            val leftFrameParams = leftFrame.layoutParams as Params
             if (inAnimation) {
                 var availableWidth = width
                 if (animationType == FROM_RIGHT) {
                     leftFrame.measure(
-                        measureSpec_exactly((leftFrameParams.weight * width).toInt()),
+                        measureSpec_exactly((leftFrame.weight * width).toInt()),
                         heightMeasureSpec
                     )
                     availableWidth -= leftFrame.measuredWidth
                     if (rightFrame != null) {
-                        val frameParams = frame?.layoutParams as? Params
-                        val rightFrameParams = rightFrame!!.layoutParams as Params
                         rightFrame!!.measure(
-                            measureSpec_exactly(if (frameParams == null || frameParams.weight == 0f) availableWidth else (width * rightFrameParams.weight).toInt()),
+                            measureSpec_exactly(if (frame == null || frame!!.weight == 0f) availableWidth else (width * rightFrame!!.weight).toInt()),
                             heightMeasureSpec
                         )
                         availableWidth -= rightFrame!!.measuredWidth
-                        if (frameParams != null) {
-                            frame!!.measure(
-                                measureSpec_exactly((width * frameParams.weight).toInt()),
-                                heightMeasureSpec
-                            )
-                        }
+                        frame?.measure(
+                            measureSpec_exactly((width * frame!!.weight).toInt()),
+                            heightMeasureSpec
+                        )
                     }
                 } else if (animationType == FROM_LEFT) {
                     if (frame?.parent != null) {
-                        val frameParams = frame!!.layoutParams as Params
                         frame!!.measure(
-                            measureSpec_exactly((width * frameParams.weight).toInt()),
+                            measureSpec_exactly((width * frame!!.weight).toInt()),
                             heightMeasureSpec
                         )
                         availableWidth -= frame!!.measuredWidth
                     }
-                    val rightFrameParams = rightFrame!!.layoutParams as Params
                     leftFrame.measure(
-                        measureSpec_exactly(if (rightFrameParams.weight == 0f) availableWidth else (width * leftFrameParams.weight).toInt()),
+                        measureSpec_exactly(if (rightFrame!!.weight == 0f) availableWidth else (width * leftFrame.weight).toInt()),
                         heightMeasureSpec
                     )
                     availableWidth -= leftFrame.measuredWidth
                     rightFrame!!.measure(
-                        measureSpec_exactly((width * rightFrameParams.weight).toInt()),
+                        measureSpec_exactly((width * rightFrame!!.weight).toInt()),
                         heightMeasureSpec
                     )
                 } else {
-                    val frameParams = frame!!.layoutParams as Params
                     frame!!.measure(
-                        measureSpec_exactly((width * frameParams.weight).toInt()),
+                        measureSpec_exactly((width * frame!!.weight).toInt()),
                         heightMeasureSpec
                     )
                     leftFrame.measure(
-                        measureSpec_exactly((width * leftFrameParams.weight).toInt()),
+                        measureSpec_exactly((width * leftFrame.weight).toInt()),
                         heightMeasureSpec
                     )
                     rightFrame!!.measure(
@@ -207,7 +205,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     )
                 }
             } else {
-                if (leftFrameParams.weight > 0.5f) {
+                if (leftFrame.weight > 0.5f) {
                     leftFrame.measure(
                         widthMeasureSpec,
                         heightMeasureSpec
@@ -237,10 +235,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
             var l = 0
 
-            val leftFrameParams = leftFrame.layoutParams as Params
             if (inAnimation) {
                 if (animationType == FROM_RIGHT) {
-                    l += leftFrameParams.leftOffset
+                    l += leftFrame.leftOffset
                     leftFrame.layout(
                         l, 0, l + leftFrame.measuredWidth, leftFrame.measuredHeight
                     )
@@ -258,8 +255,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     }
                 } else if (animationType == FROM_LEFT) {
                     if (frame?.parent != null) {
-                        val frameParams = frame!!.layoutParams as Params
-                        l += frameParams.leftOffset
+                        l += frame!!.leftOffset
                         frame!!.layout(
                             l, 0, l + frame!!.measuredWidth, frame!!.measuredHeight
                         )
@@ -279,16 +275,15 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     rightFrame!!.layout(
                         leftFrame.measuredWidth, 0, measuredWidth, rightFrame!!.measuredHeight
                     )
-                    val frameParams = frame!!.layoutParams as Params
                     frame!!.layout(
-                        frameParams.leftOffset,
+                        frame!!.leftOffset,
                         0,
-                        frameParams.leftOffset + frame!!.measuredWidth,
+                        frame!!.leftOffset + frame!!.measuredWidth,
                         frame!!.measuredHeight
                     )
                 }
             } else {
-                if (leftFrameParams.weight > 0.5f) {
+                if (leftFrame.weight > 0.5f) {
                     leftFrame.layout(
                         0, 0, measuredWidth, measuredHeight
                     )
@@ -321,12 +316,13 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         fun nextScreen(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
             if (forceWithoutAnimation) {
-                (leftFrame.layoutParams as Params).update(0.35f, 0)
+                leftFrame.updateParams(0.35f, 0)
                 if (rightFrame == null) {
                     rightFrame = Container(context)
-                    addView(rightFrame, Params(0.65f, 0))
+                    rightFrame!!.weight = 0.65f
+                    addView(rightFrame)
                 } else
-                    (rightFrame!!.layoutParams as Params).update(0.65f, 0)
+                    rightFrame!!.updateParams(0.65f, 0)
                 if (oldFragment != null) {
                     oldFragment!!.onPrePause()
                     pauseFragment(oldFragment!!)
@@ -358,9 +354,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
             if (rightFrame == null) {
                 rightFrame = Container(context)
-                addView(rightFrame, Params(0.65f, 0))
+                rightFrame!!.weight = 0.65f
+                addView(rightFrame)
             } else
-                (rightFrame!!.layoutParams as Params).update(0.65f, 0)
+                rightFrame!!.updateParams(0.65f, 0)
             rightFrame!!.addView(view)
             if (actionBar != null)
                 rightFrame!!.addView(actionBar)
@@ -377,8 +374,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             override fun onAnimationEnd(animation: Animation?) {
                                 inAnimation = false
                                 thisInAnimation = false
-                                (leftFrame.layoutParams as Params).update(0.35f, 0)
-                                (rightFrame!!.layoutParams as Params).update(0.65f, 0)
+                                leftFrame.updateParams(0.35f, 0)
+                                rightFrame!!.updateParams(0.65f, 0)
                                 requestLayout()
                                 resumeFragment(newFragment!!, true)
                                 newFragment = null
@@ -396,8 +393,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         t: Transformation?
                     ) {
                         if (thisInAnimation) {
-                            (leftFrame.layoutParams as Params).weight =
-                                1f - interpolatedTime * 0.65f
+                            leftFrame.weight = 1f - interpolatedTime * 0.65f
                             requestLayout()
                         }
                     }
@@ -412,9 +408,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
             if (frame == null) {
                 frame = Container(context)
-                frame!!.layoutParams = Params(0.65f, 0)
+                frame!!.weight = 0.65f
             } else
-                (frame!!.layoutParams as Params).update(0.65f, 0)
+                frame!!.updateParams(0.65f, 0)
             frame!!.addView(view)
             addView(frame)
             if (actionBar != null)
@@ -438,8 +434,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 inAnimation = false
                                 thisInAnimation = false
                                 removeViewInLayout(frame!!)
-                                (leftFrame.layoutParams as Params).update(0.35f, 0)
-                                (rightFrame!!.layoutParams as Params).update(0.65f, 0)
+                                leftFrame.updateParams(0.35f, 0)
+                                rightFrame!!.updateParams(0.65f, 0)
                                 requestLayout()
                                 pauseFragment(oldFragment!!)
                                 oldFragment = null
@@ -459,11 +455,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         t: Transformation?
                     ) {
                         if (thisInAnimation) {
-                            (leftFrame.layoutParams as Params).update(
+                            leftFrame.updateParams(
                                 0.35f - (0.15f) * interpolatedTime,
                                 -(measuredWidth * 0.20 * interpolatedTime).toInt()
                             )
-                            (rightFrame!!.layoutParams as Params).weight =
+                            rightFrame!!.weight =
                                 0.65f - (0.30f) * interpolatedTime
                             requestLayout()
                         }
@@ -479,7 +475,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 oldFragment = null
 
                 if (view == null) {
-                    (leftFrame.layoutParams as Params).update(1f, 0)
+                    leftFrame.updateParams(1f, 0)
                     newFragment!!.onGetFirstInStack()
                     newFragment = null
                 } else {
@@ -525,7 +521,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             override fun onAnimationEnd(animation: Animation?) {
                                 inAnimation = false
                                 thisInAnimation = false
-                                (leftFrame.layoutParams as Params).update(1f, 0)
+                                leftFrame.updateParams(1f, 0)
                                 requestLayout()
                                 pauseFragment(oldFragment!!)
                                 oldFragment = null
@@ -545,7 +541,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         t: Transformation?
                     ) {
                         if (thisInAnimation) {
-                            (leftFrame.layoutParams as Params).weight =
+                            leftFrame.weight =
                                 0.35f + interpolatedTime * 0.65f
                             requestLayout()
                         }
@@ -559,11 +555,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             var thisInAnimation = true
             animationType = FROM_LEFT
 
-            if (frame == null) {
+            if (frame == null)
                 frame = Container(context)
-                frame!!.layoutParams = Params(0.20f, (-(measuredWidth * 0.20f)).toInt())
-            } else
-                (frame!!.layoutParams as Params).update(0.20f, -(measuredWidth * 0.20f).toInt())
+            frame!!.updateParams(0.20f, -(measuredWidth * 0.20f).toInt())
             frame!!.addView(view)
             addView(frame)
             if (actionBar != null)
@@ -587,8 +581,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 inAnimation = false
                                 thisInAnimation = false
                                 removeViewInLayout(frame!!)
-                                (leftFrame.layoutParams as Params).update(0.35f, 0)
-                                (rightFrame!!.layoutParams as Params).update(0.65f, 0)
+                                leftFrame.updateParams(0.35f, 0)
+                                rightFrame!!.updateParams(0.65f, 0)
                                 requestLayout()
                                 pauseFragment(oldFragment!!)
                                 oldFragment = null
@@ -609,11 +603,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         t: Transformation?
                     ) {
                         if (thisInAnimation) {
-                            (frame!!.layoutParams as Params).update(
+                            frame!!.updateParams(
                                 0.20f + 0.15f * interpolatedTime,
                                 -(measuredWidth * 0.20f * (1 - interpolatedTime)).toInt()
                             )
-                            (leftFrame.layoutParams as Params).weight =
+                            leftFrame.weight =
                                 0.35f + 0.30f * interpolatedTime
                             requestLayout()
                         }
@@ -633,9 +627,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
             if (rightFrame == null) {
                 rightFrame = Container(context)
-                addView(rightFrame, Params(0f, 0))
+                addView(rightFrame)
             } else
-                (rightFrame!!.layoutParams as Params).update(0f, 0)
+                rightFrame!!.updateParams(0f, 0)
 
             rightFrame!!.addView(view)
             if (actionBar != null)
@@ -656,8 +650,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 leftFrame = temp!!
                                 inAnimation = false
                                 thisInAnimation = false
-                                (leftFrame.layoutParams as Params).update(0.35f, 0)
-                                (rightFrame!!.layoutParams as Params).update(0.65f, 0)
+                                leftFrame.updateParams(0.35f, 0)
+                                rightFrame!!.updateParams(0.65f, 0)
                                 requestLayout()
                                 resumeFragment(newFragment!!, false)
                                 newFragment = null
@@ -672,11 +666,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
                     override fun applyTransformation(interpolatedTime: Float, t: Transformation?) {
                         if (thisInAnimation) {
-                            (rightFrame!!.layoutParams as Params).update(
+                            rightFrame!!.updateParams(
                                 0.20f + 0.15f * interpolatedTime,
                                 -(measuredWidth * 0.20f * (1 - interpolatedTime)).toInt()
                             )
-                            (leftFrame.layoutParams as Params).weight =
+                            leftFrame.weight =
                                 0.35f + 0.30f * interpolatedTime
                             requestLayout()
                         }
@@ -709,8 +703,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 leftFrame = temp!!
                                 inAnimation = false
                                 thisInAnimation = false
-                                (leftFrame.layoutParams as Params).update(1f, 0)
-                                (rightFrame!!.layoutParams as Params).update(0f, 0)
+                                leftFrame.updateParams(1f, 0)
+                                rightFrame!!.updateParams(0f, 0)
                                 requestLayout()
                                 pauseFragment(oldFragment!!)
                                 oldFragment = null
@@ -725,11 +719,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
                     override fun applyTransformation(interpolatedTime: Float, t: Transformation?) {
                         if (thisInAnimation) {
-                            (leftFrame.layoutParams as Params).update(
+                            leftFrame.updateParams(
                                 0.35f - 0.15f * interpolatedTime,
                                 -(measuredWidth * 0.20f * interpolatedTime).toInt()
                             )
-                            (rightFrame!!.layoutParams as Params).weight =
+                            rightFrame!!.weight =
                                 0.65f + 0.35f * interpolatedTime
                         }
                     }
@@ -747,11 +741,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             var thisInAnimation = true
             animationType = FROM_RIGHT_FLOATING
 
-            if (frame == null) {
+            if (frame == null)
                 frame = Container(context)
-                frame!!.layoutParams = Params(0.65f, measuredWidth)
-            } else
-                (frame!!.layoutParams as Params).update(0.65f, measuredWidth)
+            frame!!.updateParams(0.65f, measuredWidth)
             frame!!.addView(view)
             addView(frame)
             if (actionBar != null)
@@ -774,7 +766,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 inAnimation = false
                                 thisInAnimation = false
                                 removeViewInLayout(frame!!)
-                                (rightFrame!!.layoutParams as Params).leftOffset = 0
+                                rightFrame!!.leftOffset = 0
                                 requestLayout()
 
                                 finishFragment(oldFragment!!)
@@ -795,7 +787,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         t: Transformation?
                     ) {
                         if (thisInAnimation) {
-                            (frame!!.layoutParams as Params).leftOffset =
+                            frame!!.leftOffset =
                                 measuredWidth - (measuredWidth * 0.65f * interpolatedTime).toInt()
                             requestLayout()
                         }
@@ -805,13 +797,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         }
     }
 
-    private class Params(var weight: Float, var leftOffset: Int) :
-        FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT) {
-        fun update(weight: Float, leftOffset: Int) {
-            this.weight = weight
-            this.leftOffset = leftOffset
-        }
-    }
 
     private var waitingForKeyboardCloseRunnable: Runnable? = null
 //    private val delayedOpenAnimationRunnable: Runnable? = null
@@ -880,9 +865,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     override fun onTouchEvent(ev: MotionEvent?): Boolean {
-        if (!inAnimation){
-            if (fragmentStack.size > 1){
-                if (ev == null){
+        if (!inAnimation) {
+            if (fragmentStack.size > 1) {
+                if (ev == null) {
                     startedTrackingX = 0
                     startedTrackingY = 0
                     startedTracking = false
@@ -893,7 +878,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     }
                     return false
                 } else {
-                    if (ev.action == MotionEvent.ACTION_DOWN){
+                    if (ev.action == MotionEvent.ACTION_DOWN) {
                         maybeStartedTracking = true
                         startedTrackingPointerId = ev.getPointerId(0)
                         startedTrackingX = ev.x.toInt()
@@ -903,16 +888,25 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         else
                             velocityTracker!!.clear()
                         velocityTracker!!.addMovement(ev)
-                    } else if (ev.action == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId){
+                    } else if (ev.action == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId) {
                         if (velocityTracker == null)
                             velocityTracker = VelocityTracker.obtain()
                         val dx = max(0, (ev.x - startedTrackingX).toInt())
                         val dy = abs(ev.y - startedTrackingY)
                         velocityTracker!!.addMovement(ev)
 
-                        if (maybeStartedTracking && !startedTracking && dx >= Utilities.getPixelsInCM(0.4f,true) && abs(dx)/3 > dy){
+                        if (maybeStartedTracking && !startedTracking && dx >= Utilities.getPixelsInCM(
+                                0.4f,
+                                true
+                            ) && abs(dx) / 3 > dy
+                        ) {
                             val currentFragment = fragmentStack[fragmentStack.size - 1]
-                            if (currentFragment.canBeginSlide() && findScrollingChild(this, ev.x, ev.y) == null)
+                            if (currentFragment.canBeginSlide() && findScrollingChild(
+                                    this,
+                                    ev.x,
+                                    ev.y
+                                ) == null
+                            )
                                 prepareForMoving(ev)
                             else
                                 maybeStartedTracking = false
@@ -924,43 +918,55 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             }
                             containerView.translationX = dx.toFloat()
                         }
-                    } else if (ev.getPointerId(0) == startedTrackingPointerId && (ev.action == MotionEvent.ACTION_UP || ev.action == MotionEvent.ACTION_CANCEL || ev.action == MotionEvent.ACTION_POINTER_UP)){
+                    } else if (ev.getPointerId(0) == startedTrackingPointerId && (ev.action == MotionEvent.ACTION_UP || ev.action == MotionEvent.ACTION_CANCEL || ev.action == MotionEvent.ACTION_POINTER_UP)) {
                         if (velocityTracker == null)
                             velocityTracker = VelocityTracker.obtain()
                         velocityTracker!!.computeCurrentVelocity(1000)
                         val currentFragment = fragmentStack[fragmentStack.size - 1]
-                        if (!startedTracking && currentFragment.isSwipeBackEnabled(ev)){
+                        if (!startedTracking && currentFragment.isSwipeBackEnabled(ev)) {
                             val velX = velocityTracker!!.xVelocity
                             val velY = velocityTracker!!.yVelocity
-                            if (velX >= 3500 && velX > abs(velY) && currentFragment.canBeginSlide()){
+                            if (velX >= 3500 && velX > abs(velY) && currentFragment.canBeginSlide()) {
                                 prepareForMoving(ev)
-                                if (!beginTrackingSent){
+                                if (!beginTrackingSent) {
                                     hideKeyboard()
                                     beginTrackingSent = true
                                 }
                             }
                         }
-                        if (startedTracking){
+                        if (startedTracking) {
                             val x = containerView.x
                             val animatorSet = AnimatorSet()
                             val velX = velocityTracker!!.xVelocity
                             val velY = velocityTracker!!.yVelocity
-                            val backAnimation  = x < containerView.measuredWidth / 3f && (velX < 3500 || velX < velY)
+                            val backAnimation =
+                                x < containerView.measuredWidth / 3f && (velX < 3500 || velX < velY)
                             val distToMove: Float
                             if (backAnimation) {
                                 distToMove = x
-                                val duration = max((200f/containerView.measuredWidth * distToMove).toLong(), 50)
+                                val duration = max(
+                                    (200f / containerView.measuredWidth * distToMove).toLong(),
+                                    50
+                                )
                                 animatorSet.playTogether(
-                                    ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, 0f).setDuration(duration)
+                                    ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, 0f)
+                                        .setDuration(duration)
                                 )
                             } else {
                                 distToMove = containerView.measuredWidth - x
-                                val duration = max((200/containerView.measuredWidth * distToMove).toLong(), 50)
+                                val duration = max(
+                                    (200 / containerView.measuredWidth * distToMove).toLong(),
+                                    50
+                                )
                                 animatorSet.playTogether(
-                                    ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, containerView.measuredWidth.toFloat()).setDuration(duration)
+                                    ObjectAnimator.ofFloat(
+                                        containerView,
+                                        View.TRANSLATION_X,
+                                        containerView.measuredWidth.toFloat()
+                                    ).setDuration(duration)
                                 )
                             }
-                            animatorSet.addListener(object: AnimatorListenerAdapter(){
+                            animatorSet.addListener(object : AnimatorListenerAdapter() {
                                 override fun onAnimationEnd(animation: Animator?) {
                                     onslideAnimationEnd(backAnimation)
                                 }
@@ -970,7 +976,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         } else {
                             maybeStartedTracking = false
                         }
-                        if (velocityTracker != null){
+                        if (velocityTracker != null) {
                             velocityTracker!!.recycle()
                             velocityTracker = null
                         }
@@ -1041,7 +1047,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         fragmentStack.remove(fragment)
     }
 
-    private fun prepareForMoving(ev: MotionEvent){
+    private fun prepareForMoving(ev: MotionEvent) {
         maybeStartedTracking = false
         startedTracking = true
         startedTrackingX = ev.x.toInt()
@@ -1070,8 +1076,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         resumeFragment(lastFragment, false)
     }
 
-    private fun onslideAnimationEnd(backAnimation: Boolean){
-        if(!backAnimation){
+    private fun onslideAnimationEnd(backAnimation: Boolean) {
+        if (!backAnimation) {
             if (fragmentStack.size < 2)
                 return
 
@@ -1240,7 +1246,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         fragment: Fragment,
         forceWithoutAnimation: Boolean = false
     ): Boolean {
-        val removeLast = if (fragmentStack.size > 1){
+        val removeLast = if (fragmentStack.size > 1) {
             fragmentStack[fragmentStack.size - 1].innerGroupId == currentGroupId + 1
         } else
             false

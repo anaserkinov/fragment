@@ -10,29 +10,40 @@ import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.Rect
 import android.os.Build
-import android.util.Log
 import android.view.*
 import android.view.animation.Animation
-import android.view.animation.AnimationSet
 import android.view.animation.Transformation
 import android.widget.FrameLayout
-import android.widget.OverScroller
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.math.MathUtils
 import androidx.interpolator.view.animation.FastOutLinearInInterpolator
 import com.ailnor.core.*
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.min
 
 class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private var frameAnimationFinishRunnable: Runnable? = null
     private var inAnimation = false
+    private var isSlideFinishing = false
     private var isKeyboardVisible = false
     private val rect = Rect()
+    private val scrimPaint = Paint()
+    private val layerShadowDrawable = resources.getDrawable(R.drawable.layer_shadow)
+    private var innerTranslationX = 0f
+        set(value) {
+            field = value
+            invalidate()
+        }
+    private var isSlidingLastFragment = false
 
     private var velocityTracker: VelocityTracker? = null
     private var startedTrackingX = 0
@@ -314,6 +325,253 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             }
         }
 
+        fun isSplit() = isSlidingLastFragment || leftFrame.weight != 1f
+
+        fun prepareForMove() {
+            inAnimation = true
+            animationType = FROM_LEFT
+            isSlidingLastFragment =
+                fragmentStack.size < 3 || fragmentStack[fragmentStack.size - 2].groupId != fragmentStack[fragmentStack.size - 3].groupId
+            if (isSlidingLastFragment)
+                return
+            if (frame == null)
+                frame = Container(context)
+            addView(frame)
+            frame!!.updateParams(0.20f, -measuredWidth / 5)
+
+            val fragment = fragmentStack[fragmentStack.size - 3]
+            var screenView = fragment.savedView
+            if (screenView != null) {
+                val parent = screenView.parent as? ViewGroup
+                if (parent != null) {
+                    fragment.onRemoveFromParent()
+                    parent.removeView(screenView)
+                }
+            } else {
+                screenView = fragment.createView(context)
+                fragment.onViewCreated()
+            }
+
+            if (fragment.actionBar != null && fragment.requiredActionBar.shouldAddToContainer) {
+                val parent = fragment.requiredActionBar.parent as? ViewGroup
+                parent?.removeView(fragment.actionBar)
+                frame!!.addView(fragment.requiredActionBar)
+            }
+
+            frame!!.addView(screenView)
+
+            fragment.onPreResume()
+            fragment.onResume()
+        }
+
+        fun translateX(dx: Int) {
+
+            val per = min(dx / (measuredWidth * 0.65f), 1f)
+
+            if (isSlidingLastFragment)
+                leftFrame.weight = 0.35f + per * 0.65f
+            else {
+                frame!!.updateParams(
+                    0.20f + 0.15f * per,
+                    -(measuredWidth * 0.20f * (1 - per)).toInt()
+                )
+                leftFrame.weight =
+                    0.35f + 0.30f * per
+            }
+            this.requestLayout()
+        }
+
+        fun finishTranslation(velX: Float, velY: Float) {
+            startedTracking = false
+
+            animationType = FROM_LEFT
+            var thisInAnimation = true
+
+            val leftFrameWeight = leftFrame.weight
+
+            if (isSlidingLastFragment) {
+                val backAnimation =
+                    (leftFrame.weight - 0.35) < (0.65f / 3) && (velX < 3500 || velX < velY)
+
+                startAnimation(
+                    if (backAnimation) {
+                        val leftFrameWeightDist = leftFrameWeight - 0.35f
+                        object : Animation() {
+                            init {
+                                duration = (200 * leftFrameWeight).toLong()
+                                setAnimationListener(object : AnimationListener {
+                                    override fun onAnimationStart(animation: Animation?) {
+                                    }
+
+                                    override fun onAnimationEnd(animation: Animation?) {
+                                        inAnimation = false
+                                        thisInAnimation = false
+                                        leftFrame.updateParams(0.35f, 0)
+                                        rightFrame!!.updateParams(0.65f, 0)
+                                        requestLayout()
+                                        if (frameAnimationFinishRunnable != null)
+                                            post(frameAnimationFinishRunnable)
+                                    }
+
+                                    override fun onAnimationRepeat(animation: Animation?) {
+                                    }
+                                })
+                            }
+
+                            override fun applyTransformation(
+                                interpolatedTime: Float,
+                                t: Transformation?
+                            ) {
+                                if (thisInAnimation) {
+                                    leftFrame.weight =
+                                        leftFrameWeight - leftFrameWeightDist * interpolatedTime
+                                    requestLayout()
+                                }
+                            }
+                        }
+                    } else {
+                        val leftFrameWeightDist = 1f - leftFrameWeight
+                        object : Animation() {
+                            init {
+                                duration = (200 * leftFrameWeight).toLong()
+                                setAnimationListener(object : AnimationListener {
+                                    override fun onAnimationStart(animation: Animation?) {
+                                    }
+
+                                    override fun onAnimationEnd(animation: Animation?) {
+                                        inAnimation = false
+                                        thisInAnimation = false
+                                        leftFrame.updateParams(1f, 0)
+                                        requestLayout()
+                                        finishFragment(fragmentStack[fragmentStack.size - 1])
+                                        fragmentStack[fragmentStack.size - 1].onGetFirstInStack()
+                                        if (frameAnimationFinishRunnable != null)
+                                            post(frameAnimationFinishRunnable)
+                                    }
+
+                                    override fun onAnimationRepeat(animation: Animation?) {
+                                    }
+                                })
+                            }
+
+                            override fun applyTransformation(
+                                interpolatedTime: Float,
+                                t: Transformation?
+                            ) {
+                                if (thisInAnimation) {
+                                    leftFrame.weight =
+                                        leftFrameWeight + leftFrameWeightDist * interpolatedTime
+                                    requestLayout()
+                                }
+                            }
+                        }
+                    }
+                )
+            } else {
+                val backAnimation =
+                    (leftFrame.weight - 0.35f) < (0.65f / 3) && (velX < 3500 || velX < velY)
+
+                val frameWeight = frame!!.weight
+                val frameLeftOffset = frame!!.leftOffset
+
+                startAnimation(
+                    if (backAnimation) {
+                        val frameWeightDist = frameWeight - 0.20f
+                        val frameLeftOffsetDist = -(measuredWidth / 5) - frameLeftOffset
+                        val leftFrameWeightDist = leftFrameWeight - 0.35f
+                        object : Animation() {
+                            init {
+                                duration = (200 * leftFrameWeight / 0.65f).toLong()
+                                setAnimationListener(object : AnimationListener {
+                                    override fun onAnimationStart(animation: Animation?) {
+                                    }
+
+                                    override fun onAnimationEnd(animation: Animation?) {
+                                        inAnimation = false
+                                        thisInAnimation = false
+                                        removeViewInLayout(frame!!)
+                                        leftFrame.updateParams(0.35f, 0)
+                                        rightFrame!!.updateParams(0.65f, 0)
+                                        requestLayout()
+                                        pauseFragment(fragmentStack[fragmentStack.size - 3])
+                                        if (frameAnimationFinishRunnable != null)
+                                            post(frameAnimationFinishRunnable)
+                                    }
+
+                                    override fun onAnimationRepeat(animation: Animation?) {
+                                    }
+                                })
+                            }
+
+                            override fun applyTransformation(
+                                interpolatedTime: Float,
+                                t: Transformation?
+                            ) {
+                                if (thisInAnimation) {
+                                    frame!!.updateParams(
+                                        frameWeight - frameWeightDist * interpolatedTime,
+                                        (frameLeftOffset + frameLeftOffsetDist * interpolatedTime).toInt()
+                                    )
+                                    leftFrame.weight =
+                                        leftFrameWeight - leftFrameWeightDist * interpolatedTime
+                                    requestLayout()
+                                }
+                            }
+                        }
+                    } else {
+                        val frameWeightDist = 0.35f - frameWeight
+                        val leftFrameWeightDist = 0.65f - leftFrameWeight
+                        object : Animation() {
+                            init {
+                                duration = (200 * leftFrameWeight / 0.65f).toLong()
+                                setAnimationListener(object : AnimationListener {
+                                    override fun onAnimationStart(animation: Animation?) {
+                                    }
+
+                                    override fun onAnimationEnd(animation: Animation?) {
+                                        val temp = rightFrame
+                                        rightFrame = leftFrame
+                                        leftFrame = frame!!
+                                        frame = temp
+                                        inAnimation = false
+                                        thisInAnimation = false
+                                        removeViewInLayout(frame!!)
+                                        leftFrame.updateParams(0.35f, 0)
+                                        rightFrame!!.updateParams(0.65f, 0)
+                                        requestLayout()
+                                        finishFragment(fragmentStack[fragmentStack.size - 1])
+                                        fragmentStack[fragmentStack.size - 1].onGetFirstInStack()
+                                        resumeFragment(fragmentStack[fragmentStack.size - 2], false)
+                                        if (frameAnimationFinishRunnable != null)
+                                            post(frameAnimationFinishRunnable)
+                                    }
+
+                                    override fun onAnimationRepeat(animation: Animation?) {
+                                    }
+                                })
+                            }
+
+                            override fun applyTransformation(
+                                interpolatedTime: Float,
+                                t: Transformation?
+                            ) {
+                                if (thisInAnimation) {
+                                    frame!!.updateParams(
+                                        frameWeight + frameWeightDist * interpolatedTime,
+                                        (frameLeftOffset * (1 - interpolatedTime)).toInt()
+                                    )
+                                    leftFrame.weight =
+                                        leftFrameWeight + leftFrameWeightDist * interpolatedTime
+                                    requestLayout()
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+            isSlidingLastFragment = false
+        }
+
         fun nextScreen(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
             if (forceWithoutAnimation) {
                 leftFrame.updateParams(0.35f, 0)
@@ -366,7 +624,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 300
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -421,7 +679,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 300
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -513,7 +771,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 300
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -568,7 +826,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 300
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -639,7 +897,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 300
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -692,7 +950,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 300
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -754,7 +1012,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 300
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -856,7 +1114,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
-        return inAnimation || onTouchEvent(ev)
+        return isSlideFinishing || onTouchEvent(ev)
     }
 
     override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
@@ -864,13 +1122,89 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         super.requestDisallowInterceptTouchEvent(disallowIntercept)
     }
 
+    private fun prepareForMoving(x: Float) {
+        maybeStartedTracking = false
+        startedTracking = true
+        startedTrackingX = x.toInt()
+        beginTrackingSent = false
+
+        if (Utilities.isLandscapeTablet && containerView.isSplit()) {
+            containerView.prepareForMove()
+        } else {
+            containerViewBack.visibility = View.VISIBLE
+
+            newFragment = fragmentStack[fragmentStack.size - 2]
+            val newFragment2: Fragment?
+            var leftView: View? = null
+            var leftActionBar: ActionBar? = null
+            if (Utilities.isLandscapeTablet && fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == newFragment!!.groupId) {
+                newFragment2 = fragmentStack[fragmentStack.size - 3]
+                leftView = newFragment2.savedView
+                if (leftView == null)
+                    leftView = newFragment2.createView(context)
+                else
+                    (leftView.parent as? ViewGroup)?.removeView(leftView)
+                leftActionBar = newFragment2.actionBar
+                if (leftActionBar != null && leftActionBar.shouldAddToContainer)
+                    (leftActionBar.parent as? ViewGroup)?.removeView(leftActionBar)
+            } else
+                newFragment2 = null
+
+            var rightView = newFragment!!.savedView
+            if (rightView == null)
+                rightView = newFragment!!.createView(context)
+            else
+                (rightView.parent as? ViewGroup)?.removeView(rightView)
+
+            var rightActionBar: ActionBar? = newFragment!!.actionBar
+            if (rightActionBar != null && rightActionBar.shouldAddToContainer)
+                (rightActionBar.parent as? ViewGroup)?.removeView(rightActionBar)
+            else
+                rightActionBar = null
+
+
+            if (leftView == null) {
+                containerViewBack.addGroup(rightView, rightActionBar)
+                newFragment!!.onPreResume()
+            } else {
+                containerViewBack.addGroup(leftView, leftActionBar)
+                containerViewBack.nextScreen(rightView, rightActionBar, true)
+                newFragment2!!.onPreResume()
+                resumeFragment(newFragment2, false)
+            }
+        }
+    }
+
+    private fun onSlideAnimationEnd(backAnimation: Boolean) {
+        if (backAnimation)
+            pauseFragment(fragmentStack[fragmentStack.size - 2])
+        else {
+            finishFragment(fragmentStack[fragmentStack.size - 1])
+
+            val temp = containerView
+            containerView = containerViewBack
+            containerViewBack = temp
+            bringChildToFront(containerView)
+
+            fragmentStack[fragmentStack.size - 1].onGetFirstInStack()
+        }
+        containerViewBack.visibility = View.GONE
+        startedTracking = false
+        isSlideFinishing = false
+        innerTranslationX = 0f
+        containerView.translationX = 0f
+        containerViewBack.translationX = 0f
+    }
+
+
     override fun onTouchEvent(ev: MotionEvent?): Boolean {
-        if (!inAnimation) {
+        if (!isSlideFinishing) {
             if (fragmentStack.size > 1) {
                 if (ev == null) {
                     startedTrackingX = 0
                     startedTrackingY = 0
                     startedTracking = false
+                    beginTrackingSent = false
                     maybeStartedTracking = false
                     if (velocityTracker != null) {
                         velocityTracker!!.recycle()
@@ -880,6 +1214,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 } else {
                     if (ev.action == MotionEvent.ACTION_DOWN) {
                         maybeStartedTracking = true
+                        beginTrackingSent = false
                         startedTrackingPointerId = ev.getPointerId(0)
                         startedTrackingX = ev.x.toInt()
                         startedTrackingY = ev.y.toInt()
@@ -907,7 +1242,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                     ev.y
                                 ) == null
                             )
-                                prepareForMoving(ev)
+                                prepareForMoving(ev.x)
                             else
                                 maybeStartedTracking = false
                         } else if (startedTracking) {
@@ -916,7 +1251,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 fragmentStack[fragmentStack.size - 1].onBeginSlide()
                                 beginTrackingSent = true
                             }
-                            containerView.translationX = dx.toFloat()
+                            if (Utilities.isLandscapeTablet && containerView.isSplit())
+                                containerView.translateX(dx)
+                            else {
+                                containerView.translationX = dx.toFloat()
+                                innerTranslationX = dx.toFloat()
+                            }
                         }
                     } else if (ev.getPointerId(0) == startedTrackingPointerId && (ev.action == MotionEvent.ACTION_UP || ev.action == MotionEvent.ACTION_CANCEL || ev.action == MotionEvent.ACTION_POINTER_UP)) {
                         if (velocityTracker == null)
@@ -927,7 +1267,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             val velX = velocityTracker!!.xVelocity
                             val velY = velocityTracker!!.yVelocity
                             if (velX >= 3500 && velX > abs(velY) && currentFragment.canBeginSlide()) {
-                                prepareForMoving(ev)
+                                prepareForMoving(ev.x)
                                 if (!beginTrackingSent) {
                                     hideKeyboard()
                                     beginTrackingSent = true
@@ -935,44 +1275,54 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             }
                         }
                         if (startedTracking) {
-                            val x = containerView.x
-                            val animatorSet = AnimatorSet()
                             val velX = velocityTracker!!.xVelocity
                             val velY = velocityTracker!!.yVelocity
-                            val backAnimation =
-                                x < containerView.measuredWidth / 3f && (velX < 3500 || velX < velY)
-                            val distToMove: Float
-                            if (backAnimation) {
-                                distToMove = x
-                                val duration = max(
-                                    (200f / containerView.measuredWidth * distToMove).toLong(),
-                                    50
-                                )
-                                animatorSet.playTogether(
-                                    ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, 0f)
-                                        .setDuration(duration)
-                                )
+
+                            if (Utilities.isLandscapeTablet && containerView.isSplit()) {
+                                containerView.finishTranslation(velX, velY)
                             } else {
-                                distToMove = containerView.measuredWidth - x
-                                val duration = max(
-                                    (200 / containerView.measuredWidth * distToMove).toLong(),
-                                    50
-                                )
-                                animatorSet.playTogether(
-                                    ObjectAnimator.ofFloat(
-                                        containerView,
-                                        View.TRANSLATION_X,
-                                        containerView.measuredWidth.toFloat()
-                                    ).setDuration(duration)
-                                )
+                                val x = containerView.x
+                                val backAnimation =
+                                    x < containerView.measuredWidth / 3f && (velX < 3500 || velX < velY)
+                                val distToMove: Float = if (backAnimation)
+                                    x
+                                else
+                                    containerView.measuredWidth - x
+
+                                val duration = max((200 / containerView.measuredWidth * distToMove).toLong(), 50)
+                                val animatorSet = AnimatorSet()
+                                if (backAnimation)
+                                    animatorSet.playTogether(
+                                        ObjectAnimator.ofFloat(
+                                            containerView,
+                                            View.TRANSLATION_X,
+                                            0f
+                                        ).setDuration(duration),
+                                        ObjectAnimator.ofFloat(this, "innerTranslationX", innerTranslationX, 0f)
+                                            .setDuration(duration)
+                                    )
+                                else
+                                    animatorSet.playTogether(
+                                        ObjectAnimator.ofFloat(
+                                            containerView,
+                                            View.TRANSLATION_X,
+                                            containerView.measuredWidth.toFloat()
+                                        ).setDuration(duration),
+                                        ObjectAnimator.ofFloat(
+                                            this,
+                                            "innerTranslationX",
+                                            innerTranslationX,
+                                            containerView.measuredWidth.toFloat()
+                                        ).setDuration(duration)
+                                    )
+                                animatorSet.addListener(object : AnimatorListenerAdapter() {
+                                    override fun onAnimationEnd(animation: Animator?) {
+                                        onSlideAnimationEnd(backAnimation)
+                                    }
+                                })
+                                isSlideFinishing = true
+                                animatorSet.start()
                             }
-                            animatorSet.addListener(object : AnimatorListenerAdapter() {
-                                override fun onAnimationEnd(animation: Animator?) {
-                                    onslideAnimationEnd(backAnimation)
-                                }
-                            })
-                            animatorSet.start()
-                            inAnimation = true
                         } else {
                             maybeStartedTracking = false
                         }
@@ -987,6 +1337,54 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         }
 
         return false
+    }
+
+    override fun drawChild(canvas: Canvas, child: View, drawingTime: Long): Boolean {
+        val width = width - paddingLeft - paddingRight
+        val translationX = (innerTranslationX + paddingRight).toInt()
+        val clipLeft: Int
+        val clipRight: Int
+
+        if (child == containerViewBack) {
+            clipRight = translationX + dp(1)
+            clipLeft = paddingLeft
+        } else {
+            clipRight = width + paddingLeft
+            clipLeft = translationX
+        }
+
+        val restoreCount = canvas.save()
+        if (!isSlideFinishing && !inAnimation)
+            canvas.clipRect(clipLeft, 0, clipRight, height)
+        val result = super.drawChild(canvas, child, drawingTime)
+        canvas.restoreToCount(restoreCount)
+
+        if (translationX != 0) {
+            val widthOffset = width - translationX
+            if (child == containerView) {
+                val alpha = MathUtils.clamp(widthOffset / dp(20f), 0f, 1f)
+                layerShadowDrawable.setBounds(
+                    translationX - layerShadowDrawable.intrinsicWidth,
+                    child.top,
+                    translationX,
+                    child.bottom
+                )
+                layerShadowDrawable.alpha = (0xff * alpha).toInt()
+                layerShadowDrawable.draw(canvas)
+            } else if (child == containerViewBack) {
+                val opacity = MathUtils.clamp(widthOffset / width.toFloat(), 0f, 0.8f)
+                scrimPaint.color = Color.argb((0x99 * opacity).toInt(), 0x00, 0x00, 0x00)
+                canvas.drawRect(
+                    clipLeft.toFloat(),
+                    0f,
+                    clipRight.toFloat(),
+                    height.toFloat(),
+                    scrimPaint
+                )
+            }
+        }
+
+        return result
     }
 
     private fun resumeFragment(fragment: Fragment, inFirst: Boolean) {
@@ -1045,60 +1443,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         fragment.onFragmentDestroy()
         fragment.parentLayout = null
         fragmentStack.remove(fragment)
-    }
-
-    private fun prepareForMoving(ev: MotionEvent) {
-        maybeStartedTracking = false
-        startedTracking = true
-        startedTrackingX = ev.x.toInt()
-        containerViewBack.visibility = View.VISIBLE
-        beginTrackingSent = false
-
-        val lastFragment = fragmentStack[fragmentStack.size - 2]
-        var screenView = lastFragment.savedView
-        if (screenView != null) {
-            val parent = screenView.parent as? ViewGroup
-            if (parent != null) {
-                lastFragment.onRemoveFromParent()
-                parent.removeView(screenView)
-            }
-        } else
-            screenView = lastFragment.createView(context)
-        lastFragment.onViewCreated()
-
-        if (lastFragment.actionBar != null && lastFragment.requiredActionBar.shouldAddToContainer) {
-            val parent = lastFragment.requiredActionBar.parent as? ViewGroup
-            parent?.removeView(lastFragment.actionBar)
-            containerViewBack.addGroup(screenView, lastFragment.requiredActionBar)
-        } else
-            containerViewBack.addGroup(screenView, null)
-
-        resumeFragment(lastFragment, false)
-    }
-
-    private fun onslideAnimationEnd(backAnimation: Boolean) {
-        if (!backAnimation) {
-            if (fragmentStack.size < 2)
-                return
-
-            finishFragment(fragmentStack[fragmentStack.size - 1])
-
-            val temp = containerView
-            containerView = containerViewBack
-            containerViewBack = temp
-            bringChildToFront(containerView)
-
-            val newFragment = fragmentStack[fragmentStack.size - 1]
-            newFragment.resume()
-            newFragment.onBecomeFullyVisible()
-        } else if (fragmentStack.size >= 2) {
-            pauseFragment(fragmentStack[fragmentStack.size - 2])
-        }
-        containerViewBack.visibility = View.GONE
-        startedTracking = false
-        inAnimation = false
-        containerView.translationX = 0f
-        containerViewBack.translationX = 0f
     }
 
     fun presentFragmentGroup(

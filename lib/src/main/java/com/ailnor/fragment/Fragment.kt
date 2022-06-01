@@ -147,6 +147,7 @@ abstract class Fragment : LifecycleOwner {
 
     fun createView(context: Context): View {
         savedView = onCreateView(context)
+        onViewCreated()
         return savedView!!
     }
 
@@ -161,7 +162,7 @@ abstract class Fragment : LifecycleOwner {
             return
         }
         finishing = true
-        parentLayout!!.closeLastFragment(animated)
+        parentLayout!!.closeLastFragment(this, animated)
     }
 
     fun popScreensFromStack(count: Int, removeLatest: Boolean){

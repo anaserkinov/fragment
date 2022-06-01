@@ -35,11 +35,11 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         const val ITEM_OVER_FLOW = -7
     }
 
-    private val back_home_Drawable by lazy {
+    private val home_Drawable by lazy {
         DrawerArrowDrawable(context)
     }
-    private val crossDrawable by lazy {
-        context.resources.getDrawable(R.drawable._ic_cross, null).mutate()
+    private val backDrawable by lazy {
+        BackDrawable(false)
     }
 
     private var navigationView: BadgeImageView? = null
@@ -48,6 +48,14 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         private set
     private var searchCloseButton: ImageView? = null
     private val overFlowView: BadgeImageView = BadgeImageView(context)
+
+    var drawableRotation: Float = 0f
+    set(value) {
+        backDrawable.setRotation(value, false)
+    }
+
+    val drawableCurrentRotation: Float
+    get() = backDrawable.currentRotation
 
     private var adapter: Adapter? = null
     private val activeOverflowItems = arrayListOf<LayoutParams>()
@@ -125,6 +133,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                 navigationView = BadgeImageView(context)
                 navigationView!!.setPadding(dp(12))
                 navigationView!!.background = makeCircleRippleDrawable()
+                var t = true
                 navigationView!!.setOnClickListener {
                     if (editText?.visibility == View.VISIBLE) {
                         closeSearchMode()
@@ -135,17 +144,20 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             }
             navigationView!!.setImageDrawable(
                 if (value == HOME) {
-                    back_home_Drawable.progress = 0f
-                    back_home_Drawable.color = color
-                    back_home_Drawable
+                    home_Drawable.color = color
+                    home_Drawable.progress = 0f
+                    home_Drawable.color = color
+                    home_Drawable
                 } else if (value == BACK) {
-                    back_home_Drawable.progress = 1f
-                    back_home_Drawable.color = color
-                    back_home_Drawable
+                    backDrawable.setRotated(true)
+                    backDrawable.setColor(color)
+                    backDrawable.setRotatedColor(color)
+                    backDrawable
                 } else {
-                    val d = crossDrawable
-                    d.setTint(color)
-                    d
+                    backDrawable.setRotated(false)
+                    backDrawable.setColor(color)
+                    backDrawable.setRotatedColor(color)
+                    backDrawable
                 }
             )
         }

@@ -4,10 +4,7 @@
 
 package com.ailnor.fragment
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.AnimatorSet
-import android.animation.ObjectAnimator
+import android.animation.*
 import android.content.Context
 import android.content.Intent
 import android.graphics.Canvas
@@ -22,6 +19,7 @@ import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.math.MathUtils
+import androidx.core.view.children
 import androidx.interpolator.view.animation.FastOutLinearInInterpolator
 import com.ailnor.core.*
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -37,7 +35,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private var isKeyboardVisible = false
     private val rect = Rect()
     private val scrimPaint = Paint()
-    private val layerShadowDrawable = resources.getDrawable(R.drawable.layer_shadow)
+    private val layerShadowDrawable = resources.getDrawable(R.drawable.layer_shadow).mutate()
+    private val layerShadowDrawable2 = resources.getDrawable(R.drawable.layer_shadow).mutate()
     private var innerTranslationX = 0f
         set(value) {
             field = value
@@ -63,13 +62,13 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private class Container(context: Context) : FrameLayout(context) {
 
         var weight = 1f
-        var leftOffset = 0
+        var leftOffset = 0F
 
         init {
             setBackgroundColor(Theme.white)
         }
 
-        fun updateParams(weight: Float, leftOffset: Int) {
+        fun updateParams(weight: Float, leftOffset: Float) {
             this.weight = weight
             this.leftOffset = leftOffset
         }
@@ -152,9 +151,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         }
 
         fun addGroup(view: View, actionBar: ActionBar?) {
-            rightFrame?.updateParams(0f, 0)
-            frame?.updateParams(0f, 0)
-            leftFrame.updateParams(1f, 0)
+            rightFrame?.updateParams(0f, 0f)
+            frame?.updateParams(0f, 0f)
+            leftFrame.updateParams(1f, 0f)
             requestLayout()
             leftFrame.addView(view)
             if (actionBar != null)
@@ -248,7 +247,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
             if (inAnimation) {
                 if (animationType == FROM_RIGHT) {
-                    l += leftFrame.leftOffset
+                    l += leftFrame.leftOffset.toInt()
                     leftFrame.layout(
                         l, 0, l + leftFrame.measuredWidth, leftFrame.measuredHeight
                     )
@@ -266,7 +265,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     }
                 } else if (animationType == FROM_LEFT) {
                     if (frame?.parent != null) {
-                        l += frame!!.leftOffset
+                        l += frame!!.leftOffset.toInt()
                         frame!!.layout(
                             l, 0, l + frame!!.measuredWidth, frame!!.measuredHeight
                         )
@@ -287,9 +286,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         leftFrame.measuredWidth, 0, measuredWidth, rightFrame!!.measuredHeight
                     )
                     frame!!.layout(
-                        frame!!.leftOffset,
+                        frame!!.leftOffset.toInt(),
                         0,
-                        frame!!.leftOffset + frame!!.measuredWidth,
+                        frame!!.leftOffset.toInt() + frame!!.measuredWidth,
                         frame!!.measuredHeight
                     )
                 }
@@ -325,6 +324,37 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             }
         }
 
+        override fun drawChild(canvas: Canvas, child: View, drawingTime: Long): Boolean {
+            val result = super.drawChild(canvas, child, drawingTime)
+
+            if (indexOfChild(child) == childCount - 1){
+                children.forEach {
+                    drawChildShadow(canvas, it as Container)
+                }
+            }
+
+            return result
+        }
+
+        private fun drawChildShadow(canvas: Canvas, child: Container){
+            if (child.weight <= 0.35)
+                return
+            val drawable = if (child === rightFrame)
+                layerShadowDrawable
+            else
+                layerShadowDrawable2
+            val widthOffset = width - child.left
+            val alpha = MathUtils.clamp(widthOffset / dp(20f), 0f, 1f)
+            drawable.setBounds(
+                child.left - drawable.intrinsicWidth,
+                child.top,
+                child.left,
+                child.bottom
+            )
+            drawable.alpha = (0xff * alpha).toInt()
+            drawable.draw(canvas)
+        }
+
         fun isSplit() = isSlidingLastFragment || leftFrame.weight != 1f
 
         fun prepareForMove() {
@@ -334,10 +364,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 fragmentStack.size < 3 || fragmentStack[fragmentStack.size - 2].groupId != fragmentStack[fragmentStack.size - 3].groupId
             if (isSlidingLastFragment)
                 return
+            oldFragment = fragmentStack[fragmentStack.size - 2]
             if (frame == null)
                 frame = Container(context)
             addView(frame)
-            frame!!.updateParams(0.20f, -measuredWidth / 5)
+            frame!!.updateParams(0.20f, -measuredWidth / 5f)
 
             val fragment = fragmentStack[fragmentStack.size - 3]
             var screenView = fragment.savedView
@@ -347,10 +378,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     fragment.onRemoveFromParent()
                     parent.removeView(screenView)
                 }
-            } else {
+            } else
                 screenView = fragment.createView(context)
-                fragment.onViewCreated()
-            }
 
             if (fragment.actionBar != null && fragment.requiredActionBar.shouldAddToContainer) {
                 val parent = fragment.requiredActionBar.parent as? ViewGroup
@@ -368,12 +397,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
             val per = min(dx / (measuredWidth * 0.65f), 1f)
 
+            oldFragment?.actionBar?.drawableRotation = per
+
             if (isSlidingLastFragment)
                 leftFrame.weight = 0.35f + per * 0.65f
             else {
                 frame!!.updateParams(
                     0.20f + 0.15f * per,
-                    -(measuredWidth * 0.20f * (1 - per)).toInt()
+                    -measuredWidth * 0.20f * (1 - per)
                 )
                 leftFrame.weight =
                     0.35f + 0.30f * per
@@ -406,8 +437,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                     override fun onAnimationEnd(animation: Animation?) {
                                         inAnimation = false
                                         thisInAnimation = false
-                                        leftFrame.updateParams(0.35f, 0)
-                                        rightFrame!!.updateParams(0.65f, 0)
+                                        leftFrame.updateParams(0.35f, 0f)
+                                        rightFrame!!.updateParams(0.65f, 0f)
                                         requestLayout()
                                         if (frameAnimationFinishRunnable != null)
                                             post(frameAnimationFinishRunnable)
@@ -441,7 +472,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                     override fun onAnimationEnd(animation: Animation?) {
                                         inAnimation = false
                                         thisInAnimation = false
-                                        leftFrame.updateParams(1f, 0)
+                                        leftFrame.updateParams(1f, 0f)
                                         requestLayout()
                                         finishFragment(fragmentStack[fragmentStack.size - 1])
                                         fragmentStack[fragmentStack.size - 1].onGetFirstInStack()
@@ -471,14 +502,18 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 val backAnimation =
                     (leftFrame.weight - 0.35f) < (0.65f / 3) && (velX < 3500 || velX < velY)
 
+                oldFragment = null
                 val frameWeight = frame!!.weight
                 val frameLeftOffset = frame!!.leftOffset
+
+                val leftFragmentActionBar = fragmentStack[fragmentStack.size - 2].actionBar
 
                 startAnimation(
                     if (backAnimation) {
                         val frameWeightDist = frameWeight - 0.20f
                         val frameLeftOffsetDist = -(measuredWidth / 5) - frameLeftOffset
                         val leftFrameWeightDist = leftFrameWeight - 0.35f
+                        val leftFragmentActionBarDist = leftFragmentActionBar?.drawableCurrentRotation
                         object : Animation() {
                             init {
                                 duration = (200 * leftFrameWeight / 0.65f).toLong()
@@ -490,8 +525,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                         inAnimation = false
                                         thisInAnimation = false
                                         removeViewInLayout(frame!!)
-                                        leftFrame.updateParams(0.35f, 0)
-                                        rightFrame!!.updateParams(0.65f, 0)
+                                        leftFragmentActionBar?.drawableRotation = 0f
+                                        leftFrame.updateParams(0.35f, 0f)
+                                        rightFrame!!.updateParams(0.65f, 0f)
                                         requestLayout()
                                         pauseFragment(fragmentStack[fragmentStack.size - 3])
                                         if (frameAnimationFinishRunnable != null)
@@ -510,10 +546,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 if (thisInAnimation) {
                                     frame!!.updateParams(
                                         frameWeight - frameWeightDist * interpolatedTime,
-                                        (frameLeftOffset + frameLeftOffsetDist * interpolatedTime).toInt()
+                                        frameLeftOffset + frameLeftOffsetDist * interpolatedTime
                                     )
                                     leftFrame.weight =
                                         leftFrameWeight - leftFrameWeightDist * interpolatedTime
+                                    leftFragmentActionBar?.drawableRotation = leftFragmentActionBarDist!! - leftFragmentActionBarDist * interpolatedTime
                                     requestLayout()
                                 }
                             }
@@ -536,8 +573,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                         inAnimation = false
                                         thisInAnimation = false
                                         removeViewInLayout(frame!!)
-                                        leftFrame.updateParams(0.35f, 0)
-                                        rightFrame!!.updateParams(0.65f, 0)
+                                        leftFragmentActionBar?.drawableRotation = 1f
+                                        leftFrame.updateParams(0.35f, 0f)
+                                        rightFrame!!.updateParams(0.65f, 0f)
                                         requestLayout()
                                         finishFragment(fragmentStack[fragmentStack.size - 1])
                                         fragmentStack[fragmentStack.size - 1].onGetFirstInStack()
@@ -558,10 +596,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 if (thisInAnimation) {
                                     frame!!.updateParams(
                                         frameWeight + frameWeightDist * interpolatedTime,
-                                        (frameLeftOffset * (1 - interpolatedTime)).toInt()
+                                        frameLeftOffset * (1 - interpolatedTime)
                                     )
                                     leftFrame.weight =
                                         leftFrameWeight + leftFrameWeightDist * interpolatedTime
+                                    leftFragmentActionBar?.drawableRotation = leftFragmentActionBar!!.drawableCurrentRotation * (1 - interpolatedTime) + interpolatedTime
                                     requestLayout()
                                 }
                             }
@@ -574,27 +613,26 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         fun nextScreen(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
             if (forceWithoutAnimation) {
-                leftFrame.updateParams(0.35f, 0)
+                leftFrame.updateParams(0.35f, 0f)
                 if (rightFrame == null) {
                     rightFrame = Container(context)
                     rightFrame!!.weight = 0.65f
                     addView(rightFrame)
                 } else
-                    rightFrame!!.updateParams(0.65f, 0)
+                    rightFrame!!.updateParams(0.65f, 0f)
                 if (oldFragment != null) {
+                    oldFragment!!.actionBar?.drawableRotation = 0f
                     oldFragment!!.onPrePause()
                     pauseFragment(oldFragment!!)
                     oldFragment = null
                     val temp = leftFrame
                     leftFrame = rightFrame!!
                     rightFrame = temp
-                    val tempParams = rightFrame!!.layoutParams
-                    rightFrame!!.layoutParams = leftFrame.layoutParams
-                    leftFrame.layoutParams = tempParams
                 }
                 rightFrame!!.addView(view)
                 if (actionBar != null)
                     rightFrame!!.addView(actionBar)
+                newFragment!!.actionBar?.drawableRotation = 1f
                 newFragment!!.onPreResume()
                 resumeFragment(newFragment!!, true)
                 newFragment = null
@@ -612,14 +650,15 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
             if (rightFrame == null) {
                 rightFrame = Container(context)
-                rightFrame!!.weight = 0.65f
                 addView(rightFrame)
             } else
-                rightFrame!!.updateParams(0.65f, 0)
+                bringChildToFront(rightFrame)
+            rightFrame!!.updateParams(0.65f, 0f)
             rightFrame!!.addView(view)
             if (actionBar != null)
                 rightFrame!!.addView(actionBar)
 
+            newFragment!!.actionBar?.drawableRotation = 1f
             newFragment!!.onPreResume()
             startAnimation(
                 object : Animation() {
@@ -632,8 +671,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             override fun onAnimationEnd(animation: Animation?) {
                                 inAnimation = false
                                 thisInAnimation = false
-                                leftFrame.updateParams(0.35f, 0)
-                                rightFrame!!.updateParams(0.65f, 0)
+                                leftFrame.updateParams(0.35f, 0f)
+                                rightFrame!!.updateParams(0.65f, 0f)
                                 requestLayout()
                                 resumeFragment(newFragment!!, true)
                                 newFragment = null
@@ -664,18 +703,22 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             var thisInAnimation = true
             animationType = FROM_RIGHT
 
-            if (frame == null) {
+            if (frame == null)
                 frame = Container(context)
-                frame!!.weight = 0.65f
-            } else
-                frame!!.updateParams(0.65f, 0)
-            frame!!.addView(view)
             addView(frame)
+            frame!!.updateParams(0.65f, 0f)
+
+            frame!!.addView(view)
             if (actionBar != null)
                 frame!!.addView(actionBar)
 
+
+            val currentFragmentActionBar = fragmentStack[fragmentStack.size - 2].actionBar
             oldFragment!!.onPrePause()
+
+            newFragment!!.actionBar?.drawableRotation = 1f
             newFragment!!.onPreResume()
+
             startAnimation(
                 object : Animation() {
                     init {
@@ -692,8 +735,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 inAnimation = false
                                 thisInAnimation = false
                                 removeViewInLayout(frame!!)
-                                leftFrame.updateParams(0.35f, 0)
-                                rightFrame!!.updateParams(0.65f, 0)
+                                currentFragmentActionBar?.drawableRotation = 0f
+                                leftFrame.updateParams(0.35f, 0f)
+                                rightFrame!!.updateParams(0.65f, 0f)
                                 requestLayout()
                                 pauseFragment(oldFragment!!)
                                 oldFragment = null
@@ -715,10 +759,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         if (thisInAnimation) {
                             leftFrame.updateParams(
                                 0.35f - (0.15f) * interpolatedTime,
-                                -(measuredWidth * 0.20 * interpolatedTime).toInt()
+                                -measuredWidth * 0.20f * interpolatedTime
                             )
                             rightFrame!!.weight =
                                 0.65f - (0.30f) * interpolatedTime
+                            currentFragmentActionBar?.drawableRotation = 1f - interpolatedTime
                             requestLayout()
                         }
                     }
@@ -728,22 +773,21 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         fun previousScreen(view: View?, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
             if (forceWithoutAnimation) {
-                oldFragment!!.onPrePause()
-                pauseFragment(oldFragment!!)
-                oldFragment = null
+                if (oldFragment != null) {
+                    oldFragment!!.onPrePause()
+                    finishFragment(oldFragment!!)
+                }
 
                 if (view == null) {
-                    leftFrame.updateParams(1f, 0)
+                    leftFrame.updateParams(1f, 0f)
                     newFragment!!.onGetFirstInStack()
                     newFragment = null
-                } else {
+                } else if (oldFragment != null){
                     val temp = rightFrame
                     rightFrame = leftFrame
                     leftFrame = temp!!
-
-                    val tempParams = leftFrame.layoutParams
-                    leftFrame.layoutParams = rightFrame!!.layoutParams
-                    rightFrame!!.layoutParams = tempParams
+                    // Back from full screen
+                    TODO()
                     rightFrame!!.addView(view)
                     if (actionBar != null)
                         rightFrame!!.addView(actionBar)
@@ -752,9 +796,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     resumeFragment(newFragment!!, false)
                     newFragment = null
 
+                    newFragment2!!.actionBar?.drawableRotation = 1f
                     newFragment2!!.onGetFirstInStack()
                     newFragment2 = null
                 }
+                oldFragment = null
                 requestLayout()
             } else if (view == null)
                 startLastPreviousAnimation()
@@ -779,9 +825,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             override fun onAnimationEnd(animation: Animation?) {
                                 inAnimation = false
                                 thisInAnimation = false
-                                leftFrame.updateParams(1f, 0)
+                                leftFrame.updateParams(1f, 0f)
                                 requestLayout()
-                                pauseFragment(oldFragment!!)
+                                finishFragment(oldFragment!!)
                                 oldFragment = null
                                 newFragment!!.onGetFirstInStack()
                                 newFragment = null
@@ -815,7 +861,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
             if (frame == null)
                 frame = Container(context)
-            frame!!.updateParams(0.20f, -(measuredWidth * 0.20f).toInt())
+            frame!!.updateParams(0.20f, -measuredWidth * 0.20f)
             frame!!.addView(view)
             addView(frame)
             if (actionBar != null)
@@ -823,13 +869,15 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
             oldFragment!!.onPrePause()
             newFragment!!.onPreResume()
+
+            newFragment2!!.actionBar?.drawableRotation = 0f
+            newFragment2!!.onPreResume()
             startAnimation(
                 object : Animation() {
                     init {
                         duration = 200
                         setAnimationListener(object : AnimationListener {
-                            override fun onAnimationStart(animation: Animation?) {
-                            }
+                            override fun onAnimationStart(animation: Animation?) {}
 
                             override fun onAnimationEnd(animation: Animation?) {
                                 val temp = rightFrame
@@ -839,13 +887,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 inAnimation = false
                                 thisInAnimation = false
                                 removeViewInLayout(frame!!)
-                                leftFrame.updateParams(0.35f, 0)
-                                rightFrame!!.updateParams(0.65f, 0)
+                                leftFrame.updateParams(0.35f, 0f)
+                                rightFrame!!.updateParams(0.65f, 0f)
                                 requestLayout()
-                                pauseFragment(oldFragment!!)
+                                finishFragment(oldFragment!!)
                                 oldFragment = null
-                                resumeFragment(newFragment!!, true)
+                                newFragment!!.onGetFirstInStack()
                                 newFragment = null
+                                resumeFragment(newFragment2!!, false)
                                 newFragment2 = null
                                 if (frameAnimationFinishRunnable != null)
                                     post(frameAnimationFinishRunnable)
@@ -863,10 +912,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         if (thisInAnimation) {
                             frame!!.updateParams(
                                 0.20f + 0.15f * interpolatedTime,
-                                -(measuredWidth * 0.20f * (1 - interpolatedTime)).toInt()
+                                -measuredWidth * 0.20f * (1 - interpolatedTime)
                             )
                             leftFrame.weight =
                                 0.35f + 0.30f * interpolatedTime
+                            newFragment!!.actionBar?.drawableRotation = interpolatedTime
                             requestLayout()
                         }
                     }
@@ -886,8 +936,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             if (rightFrame == null) {
                 rightFrame = Container(context)
                 addView(rightFrame)
-            } else
-                rightFrame!!.updateParams(0f, 0)
+            }
+            rightFrame!!.updateParams(0.20f, -measuredWidth * 0.20f)
 
             rightFrame!!.addView(view)
             if (actionBar != null)
@@ -908,8 +958,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 leftFrame = temp!!
                                 inAnimation = false
                                 thisInAnimation = false
-                                leftFrame.updateParams(0.35f, 0)
-                                rightFrame!!.updateParams(0.65f, 0)
+                                leftFrame.updateParams(0.35f, 0f)
+                                rightFrame!!.updateParams(0.65f, 0f)
                                 requestLayout()
                                 resumeFragment(newFragment!!, false)
                                 newFragment = null
@@ -926,10 +976,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         if (thisInAnimation) {
                             rightFrame!!.updateParams(
                                 0.20f + 0.15f * interpolatedTime,
-                                -(measuredWidth * 0.20f * (1 - interpolatedTime)).toInt()
+                                -measuredWidth * 0.20f * (1 - interpolatedTime)
                             )
                             leftFrame.weight =
-                                0.35f + 0.30f * interpolatedTime
+                                1f - 0.35f * interpolatedTime
                             requestLayout()
                         }
                     }
@@ -961,8 +1011,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 leftFrame = temp!!
                                 inAnimation = false
                                 thisInAnimation = false
-                                leftFrame.updateParams(1f, 0)
-                                rightFrame!!.updateParams(0f, 0)
+                                leftFrame.updateParams(1f, 0f)
+                                rightFrame!!.updateParams(0f, 0f)
                                 requestLayout()
                                 pauseFragment(oldFragment!!)
                                 oldFragment = null
@@ -979,7 +1029,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         if (thisInAnimation) {
                             leftFrame.updateParams(
                                 0.35f - 0.15f * interpolatedTime,
-                                -(measuredWidth * 0.20f * interpolatedTime).toInt()
+                                -measuredWidth * 0.20f * interpolatedTime
                             )
                             rightFrame!!.weight =
                                 0.65f + 0.35f * interpolatedTime
@@ -1001,12 +1051,13 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
             if (frame == null)
                 frame = Container(context)
-            frame!!.updateParams(0.65f, measuredWidth)
+            frame!!.updateParams(0.65f, measuredWidth.toFloat())
             frame!!.addView(view)
             addView(frame)
             if (actionBar != null)
                 frame!!.addView(actionBar)
 
+            newFragment!!.actionBar?.drawableRotation = 1f
             newFragment!!.onPreResume()
             oldFragment!!.onPrePause()
             startAnimation(
@@ -1024,7 +1075,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 inAnimation = false
                                 thisInAnimation = false
                                 removeViewInLayout(frame!!)
-                                rightFrame!!.leftOffset = 0
+                                rightFrame!!.leftOffset = 0f
                                 requestLayout()
 
                                 finishFragment(oldFragment!!)
@@ -1046,7 +1097,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     ) {
                         if (thisInAnimation) {
                             frame!!.leftOffset =
-                                measuredWidth - (measuredWidth * 0.65f * interpolatedTime).toInt()
+                                measuredWidth - measuredWidth * 0.65f * interpolatedTime
                             requestLayout()
                         }
                     }
@@ -1166,6 +1217,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             if (leftView == null) {
                 containerViewBack.addGroup(rightView, rightActionBar)
                 newFragment!!.onPreResume()
+                newFragment!!.resume()
+                newFragment = null
             } else {
                 containerViewBack.addGroup(leftView, leftActionBar)
                 containerViewBack.nextScreen(rightView, rightActionBar, true)
@@ -1181,6 +1234,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         else {
             finishFragment(fragmentStack[fragmentStack.size - 1])
 
+            currentGroupId--
             val temp = containerView
             containerView = containerViewBack
             containerViewBack = temp
@@ -1289,7 +1343,15 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 else
                                     containerView.measuredWidth - x
 
-                                val duration = max((200 / containerView.measuredWidth * distToMove).toLong(), 50)
+                                if (backAnimation)
+                                    fragmentStack[fragmentStack.size - 2].onPrePause()
+                                else
+                                    fragmentStack[fragmentStack.size - 1].onPrePause()
+
+                                val duration = max(
+                                    (200 * distToMove / containerView.measuredWidth).toLong(),
+                                    50
+                                )
                                 val animatorSet = AnimatorSet()
                                 if (backAnimation)
                                     animatorSet.playTogether(
@@ -1298,7 +1360,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                             View.TRANSLATION_X,
                                             0f
                                         ).setDuration(duration),
-                                        ObjectAnimator.ofFloat(this, "innerTranslationX", innerTranslationX, 0f)
+                                        ObjectAnimator.ofFloat(
+                                            this,
+                                            "innerTranslationX",
+                                            innerTranslationX,
+                                            0f
+                                        )
                                             .setDuration(duration)
                                     )
                                 else
@@ -1495,7 +1562,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             }
         } else
             screenView = fragment.createView(context)
-        fragment.onViewCreated()
 
         if (fragment.actionBar != null && fragment.requiredActionBar.shouldAddToContainer) {
             val parent = fragment.requiredActionBar.parent as? ViewGroup
@@ -1651,7 +1717,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         oldFragment = if (fragmentStack.size > 1) {
             if (removeLast)
                 fragmentStack[fragmentStack.size - 1]
-            else if (fragmentStack[fragmentStack.size - 2].groupId == currentGroupId)
+            else if (fragmentStack[fragmentStack.size - 2].groupId == currentGroupId && containerView.isSplit())
                 fragmentStack[fragmentStack.size - 2]
             else
                 null
@@ -1716,17 +1782,28 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         return true
     }
 
-    fun closeLastFragment(animated: Boolean = true) {
+    fun closeLastFragment(fragment: Fragment, animated: Boolean = true) {
         if (!inAnimation)
-            closeLastFragmentInternal(animated)
+            closeLastFragmentInternal(animated, fragmentStack.indexOf(fragment) != fragmentStack.size - 1)
         else if (frameAnimationFinishRunnable == null)
             frameAnimationFinishRunnable = Runnable {
                 frameAnimationFinishRunnable = null
-                closeLastFragmentInternal(animated)
+                closeLastFragmentInternal(animated, fragmentStack.indexOf(fragment) != fragmentStack.size - 1)
             }
     }
 
-    private fun closeLastFragmentInternal(animated: Boolean) {
+    fun closeLastFragment(animated: Boolean = true, openPrevious: Boolean = true) {
+        if (!inAnimation)
+            closeLastFragmentInternal(animated, openPrevious)
+        else if (frameAnimationFinishRunnable == null)
+            frameAnimationFinishRunnable = Runnable {
+                frameAnimationFinishRunnable = null
+                closeLastFragmentInternal(animated, openPrevious)
+            }
+    }
+
+
+    private fun closeLastFragmentInternal(animated: Boolean, openPrevious: Boolean) {
         val _oldFragment = fragmentStack[fragmentStack.size - 1]
 
         if (_oldFragment.groupId == -2) {
@@ -1739,7 +1816,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 newFragment = fragmentStack[fragmentStack.size - 2]
                 if (Utilities.isLandscapeTablet) {
                     oldFragment = _oldFragment
-                    if (fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == currentGroupId) {
+                    if (fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == currentGroupId && openPrevious) {
                         val preScreen = fragmentStack[fragmentStack.size - 3]
                         var preView = preScreen.savedView
                         newFragment2 = preScreen
@@ -1755,7 +1832,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         containerView.previousScreen(preView, preScreen.actionBar, !animated)
                     } else
                         containerView.previousScreen(null, null, !animated)
-                    fragmentStack.removeAt(fragmentStack.size - 1)
                     return
                 }
             } else
@@ -1993,6 +2069,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 if (preScreen.groupId == fragmentStack[fragmentStack.size - 1].groupId) {
                     if (Utilities.isLandscapeTablet) {
                         newFragment = preScreen
+                        fragmentStack[fragmentStack.size - 1].actionBar?.drawableRotation = 1f
                         var screenView = preScreen.savedView
                         if (screenView != null) {
                             val parent = screenView.parent as? ViewGroup
@@ -2011,6 +2088,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             containerView.openLeft(screenView, null)
                     } else {
                         oldFragment = preScreen
+                        fragmentStack[fragmentStack.size - 1].actionBar?.drawableRotation = 0f
                         containerView.closeLeft()
                     }
                 }

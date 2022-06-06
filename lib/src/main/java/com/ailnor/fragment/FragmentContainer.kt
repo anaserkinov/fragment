@@ -31,6 +31,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private var frameAnimationFinishRunnable: Runnable? = null
     private var inAnimation = false
+    private var touching = false
     private var isSlideFinishing = false
     private var isKeyboardVisible = false
     private val rect = Rect()
@@ -359,6 +360,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         fun prepareForMove() {
             inAnimation = true
+            touching = true
             animationType = FROM_LEFT
             isSlidingLastFragment =
                 fragmentStack.size < 3 || fragmentStack[fragmentStack.size - 2].groupId != fragmentStack[fragmentStack.size - 3].groupId
@@ -436,6 +438,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
                                     override fun onAnimationEnd(animation: Animation?) {
                                         inAnimation = false
+                                        touching = false
                                         thisInAnimation = false
                                         leftFrame.updateParams(0.35f, 0f)
                                         rightFrame!!.updateParams(0.65f, 0f)
@@ -1312,9 +1315,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (backAnimation)
             pauseFragment(fragmentStack[fragmentStack.size - 2])
         else {
-            finishFragment(fragmentStack[fragmentStack.size - 1])
+            val fragment = fragmentStack[fragmentStack.size - 1]
+            if (fragment.groupId != fragmentStack[fragmentStack.size - 2].groupId)
+                currentGroupId --
 
-            currentGroupId--
+            finishFragment(fragment)
+
             val temp = containerView
             containerView = containerViewBack
             containerViewBack = temp
@@ -1332,7 +1338,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
 
     override fun onTouchEvent(ev: MotionEvent?): Boolean {
-        if (!isSlideFinishing) {
+        if (!isSlideFinishing && inAnimation == touching) {
             if (fragmentStack.size > 1) {
                 if (ev == null) {
                     startedTrackingX = 0
@@ -1607,11 +1613,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         forceWithoutAnimation: Boolean = false
     ): Boolean {
         if (!inAnimation)
-            return presentFragmentInternal(screen, newGroup, removeLast, forceWithoutAnimation)
+            return presentFragmentInternal(screen, newGroup, removeLast, false, forceWithoutAnimation)
         else if (frameAnimationFinishRunnable == null)
             frameAnimationFinishRunnable = Runnable {
                 frameAnimationFinishRunnable = null
-                presentFragmentInternal(screen, newGroup, removeLast, forceWithoutAnimation)
+                presentFragmentInternal(screen, newGroup, removeLast, false, forceWithoutAnimation)
             }
         return false
     }
@@ -1620,6 +1626,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         fragment: Fragment,
         newGroup: Boolean,
         removeLast: Boolean,
+        innerGroup: Boolean,
         forceWithoutAnimation: Boolean
     ): Boolean {
         if (!fragment.onFragmentCreate())
@@ -1631,6 +1638,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (newGroup)
             currentGroupId++
         fragment.groupId = currentGroupId
+        if (innerGroup)
+            fragment.innerGroupId = currentGroupId + 1
         fragment.parentLayout = this
 
         var screenView = fragment.savedView
@@ -1740,17 +1749,27 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             fragmentStack[fragmentStack.size - 1].innerGroupId == currentGroupId + 1
         } else
             false
-        if (!Utilities.isLandscapeTablet)
-            return presentFragment(fragment, false, removeLast, forceWithoutAnimation)
-        else if (!inAnimation)
-            return nextScreenInternal(fragment, removeLast, forceWithoutAnimation)
+
+        if (!inAnimation)
+            return nextScreenInnerGroupInternal(fragment, removeLast, forceWithoutAnimation)
         else if (frameAnimationFinishRunnable == null)
             frameAnimationFinishRunnable = Runnable {
                 frameAnimationFinishRunnable = null
 
-                nextScreenInternal(fragment, removeLast, forceWithoutAnimation)
+                nextScreenInnerGroupInternal(fragment, removeLast, forceWithoutAnimation)
             }
         return false
+    }
+
+    private fun nextScreenInnerGroupInternal(
+        fragment: Fragment,
+        removeLast: Boolean,
+        forceWithoutAnimation: Boolean
+    ): Boolean {
+        return if (!Utilities.isLandscapeTablet)
+            presentFragmentInternal(fragment, false, removeLast, true, forceWithoutAnimation)
+        else
+            nextScreenInternal(fragment, removeLast, true, forceWithoutAnimation)
     }
 
     fun nextScreen(
@@ -1761,11 +1780,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (!Utilities.isLandscapeTablet)
             return presentFragment(fragment, false, removeLast, forceWithoutAnimation)
         else if (!inAnimation)
-            return nextScreenInternal(fragment, removeLast, forceWithoutAnimation)
+            return nextScreenInternal(fragment, removeLast, false, forceWithoutAnimation)
         else if (frameAnimationFinishRunnable == null)
             frameAnimationFinishRunnable = Runnable {
                 frameAnimationFinishRunnable = null
-                nextScreenInternal(fragment, removeLast, forceWithoutAnimation)
+                nextScreenInternal(fragment, removeLast, false, forceWithoutAnimation)
             }
         return false
     }
@@ -1773,6 +1792,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private fun nextScreenInternal(
         fragment: Fragment,
         removeLast: Boolean,
+        innerGroup: Boolean,
         forceWithoutAnimation: Boolean
     ): Boolean {
         if (!fragment.onFragmentCreate()) {
@@ -1780,7 +1800,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         }
 
         fragment.groupId = currentGroupId
-        fragment.innerGroupId = currentGroupId + 1
+        if (innerGroup)
+            fragment.innerGroupId = currentGroupId + 1
         fragment.parentLayout = this
         var screenView = fragment.savedView
         if (screenView != null) {
@@ -1903,7 +1924,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 if (Utilities.isLandscapeTablet) {
                     oldFragment = _oldFragment
                     if (fragmentStack.size == 2 && fragmentStack[fragmentStack.size - 2].groupId == currentGroupId ||
-                        fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == currentGroupId) {
+                        fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == currentGroupId
+                    ) {
                         val preScreen = if (!openPrevious) {
                             if (!containerView.isSplit()) {
                                 oldFragment = null

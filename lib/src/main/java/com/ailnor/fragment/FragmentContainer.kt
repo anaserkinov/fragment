@@ -1265,6 +1265,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (Utilities.isLandscapeTablet && containerView.isSplit()) {
             containerView.prepareForMove()
         } else {
+            containerViewBack.translationX = 0f
+            containerViewBack.alpha = 1f
             containerViewBack.visibility = View.VISIBLE
 
             newFragment = fragmentStack[fragmentStack.size - 2]
@@ -1329,11 +1331,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             fragmentStack[fragmentStack.size - 1].onGetFirstInStack()
         }
         containerViewBack.visibility = View.GONE
+        containerView.translationX = 0f
         startedTracking = false
         isSlideFinishing = false
         innerTranslationX = 0f
-        containerView.translationX = 0f
-        containerViewBack.translationX = 0f
     }
 
 
@@ -1664,6 +1665,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         val temp = containerView
         containerView = containerViewBack
         containerViewBack = temp
+        bringChildToFront(containerView)
 
         if (forceWithoutAnimation) {
             containerView.translationX = 0f
@@ -1686,7 +1688,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             containerView.translationX = measuredWidth * 0.5f
             containerView.alpha = 0f
             containerView.visibility = VISIBLE
-            containerView.elevation = 8f
             bringChildToFront(containerView)
 
             currentAnimationSet = AnimatorSet()
@@ -1709,7 +1710,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 }
 
                 override fun onAnimationEnd(animation: Animator?) {
-                    containerView.elevation = 0f
                     if (fragmentStack.size > 1) {
                         val oldFragment = fragmentStack[fragmentStack.size - 2]
                         if (removeLast)
@@ -1998,14 +1998,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 newFragment2!!.onPreResume()
             }
 
-            val temp = containerViewBack
-            containerViewBack = containerView
-            containerView = temp
+            val temp = containerView
+            containerView = containerViewBack
+            containerViewBack = temp
+            bringChildToFront(containerView)
 
             containerView.translationX = 0f
             containerView.alpha = 1f
             containerView.visibility = VISIBLE
-            containerView.elevation = 0f
 
             _oldFragment.onPrePause()
             if (animated) {
@@ -2037,7 +2037,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         finishFragment(_oldFragment)
                         if (groupRemoved)
                             currentGroupId = fragmentStack[fragmentStack.size - 1].groupId
-                        containerViewBack.visibility = View.GONE
                         inAnimation = false
                         if (frameAnimationFinishRunnable != null)
                             post(frameAnimationFinishRunnable)

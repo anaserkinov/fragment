@@ -2001,7 +2001,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             val temp = containerView
             containerView = containerViewBack
             containerViewBack = temp
-            bringChildToFront(containerView)
 
             containerView.translationX = 0f
             containerView.alpha = 1f
@@ -2027,6 +2026,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
                     override fun onAnimationEnd(animation: Animator?) {
                         containerViewBack.visibility = View.GONE
+                        bringChildToFront(containerView)
                         if (leftView == null) {
                             resumeFragment(newFragment!!, true)
                             newFragment = null

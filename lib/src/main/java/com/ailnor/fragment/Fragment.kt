@@ -103,6 +103,7 @@ abstract class Fragment : LifecycleOwner {
         }
     val fragmentView: View
         get() = savedView!!
+    protected var isStarted = false
     protected var isPaused = true
         set(value) {
             field = value
@@ -217,6 +218,7 @@ abstract class Fragment : LifecycleOwner {
     open fun onConfigurationChanged(newConfig: Configuration?) {}
     open fun onOrientationChanged() {}
 
+    open fun onStart() {}
     open fun onResume() {}
     open fun onPause() {}
 
@@ -225,6 +227,10 @@ abstract class Fragment : LifecycleOwner {
 
     fun resume() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        if (!isStarted){
+            isStarted = true
+            onStart()
+        }
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         isPaused = false
         onResume()

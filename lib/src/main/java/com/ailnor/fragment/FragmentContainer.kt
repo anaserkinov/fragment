@@ -474,6 +474,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
                                     override fun onAnimationEnd(animation: Animation?) {
                                         inAnimation = false
+                                        touching = false
                                         thisInAnimation = false
                                         leftFrame.updateParams(1f, 0f)
                                         requestLayout()
@@ -527,6 +528,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
                                     override fun onAnimationEnd(animation: Animation?) {
                                         inAnimation = false
+                                        touching = false
                                         thisInAnimation = false
                                         removeViewInLayout(frame!!)
                                         leftFragmentActionBar?.drawableRotation = 0f
@@ -576,6 +578,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                         leftFrame = frame!!
                                         frame = temp
                                         inAnimation = false
+                                        touching = false
                                         thisInAnimation = false
                                         removeViewInLayout(frame!!)
                                         leftFragmentActionBar?.drawableRotation = 1f

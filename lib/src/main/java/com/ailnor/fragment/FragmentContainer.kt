@@ -1322,7 +1322,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         else {
             val fragment = fragmentStack[fragmentStack.size - 1]
             if (fragment.groupId != fragmentStack[fragmentStack.size - 2].groupId)
-                currentGroupId --
+                currentGroupId--
 
             finishFragment(fragment)
 
@@ -1617,7 +1617,13 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         forceWithoutAnimation: Boolean = false
     ): Boolean {
         if (!inAnimation)
-            return presentFragmentInternal(screen, newGroup, removeLast, false, forceWithoutAnimation)
+            return presentFragmentInternal(
+                screen,
+                newGroup,
+                removeLast,
+                false,
+                forceWithoutAnimation
+            )
         else if (frameAnimationFinishRunnable == null)
             frameAnimationFinishRunnable = Runnable {
                 frameAnimationFinishRunnable = null
@@ -2245,9 +2251,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
-        fragmentStack.forEach {
-            it.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        }
+        if (grantResults.isNotEmpty())
+            fragmentStack.forEach {
+                it.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            }
     }
 
     fun onBackPressed(): Boolean {

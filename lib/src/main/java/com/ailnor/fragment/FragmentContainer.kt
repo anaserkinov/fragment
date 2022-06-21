@@ -11,6 +11,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.drawable.Drawable
 import android.os.Build
 import android.view.*
 import android.view.animation.Animation
@@ -64,6 +65,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         var weight = 1f
         var leftOffset = 0F
+        private val headerShadowDrawable = R.drawable.header_shadow.drawable()
 
         init {
             setBackgroundColor(Theme.white)
@@ -135,6 +137,38 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         layoutParams.topMargin + actionBarHeight + child.measuredHeight + topInset
                     )
                 }
+            }
+        }
+
+        override fun drawChild(canvas: Canvas, child: View?, drawingTime: Long): Boolean {
+            return if (child is ActionBar) {
+                super.drawChild(canvas, child, drawingTime)
+            } else {
+                var actionBarHeight = 0
+                var actionBarY = 0
+                val childCount = childCount
+                for (a in 0 until childCount) {
+                    val view = getChildAt(a)
+                    if (view === child) {
+                        continue
+                    }
+                    if (view is ActionBar && view.getVisibility() == VISIBLE && view.drawShadow) {
+                        actionBarHeight = view.getMeasuredHeight()
+                        actionBarY = view.getY().toInt()
+                        break
+                    }
+                }
+                val result = super.drawChild(canvas, child, drawingTime)
+                if (actionBarHeight != 0) {
+                    headerShadowDrawable.setBounds(
+                        0,
+                        actionBarY + actionBarHeight,
+                        measuredWidth,
+                        actionBarY + actionBarHeight + headerShadowDrawable.intrinsicHeight
+                    )
+                    headerShadowDrawable.draw(canvas)
+                }
+                result
             }
         }
     }

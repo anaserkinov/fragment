@@ -39,6 +39,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         DrawerArrowDrawable(context)
     }
     private val backDrawable by lazy {
+
         BackDrawable(false)
     }
 
@@ -57,11 +58,12 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
     val drawableCurrentRotation: Float
     get() = backDrawable.currentRotation
 
+    var drawShadow = true
     private var adapter: Adapter? = null
     private val activeOverflowItems = arrayListOf<LayoutParams>()
     private val invisibleOverflowItems = arrayListOf<LayoutParams>()
 
-    var color = Theme.black
+    var color = Theme.white
         set(value) {
             field = value
             if (navigationView != null) {
@@ -163,6 +165,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         }
 
     init {
+        setBackgroundColor(Theme.colorPrimary)
         this.navigationType = navigationType
 
         setPadding(dp(4), dp(8), dp(4), dp(8))
@@ -207,11 +210,16 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         return max(maxWidth, dp(200))
     }
 
-    fun setTitle(@StringRes res: Int) {
-        setTitle(context.getString(res))
+    fun createMenu(): Builder{
+        return Builder.init(this)
     }
 
-    fun setTitle(title: String?) {
+    fun setTitle(@StringRes res: Int): ActionBar{
+        setTitle(context.getString(res))
+        return this
+    }
+
+    fun setTitle(title: String?): ActionBar{
         if (contentView == null) {
             val contentView = TextView(context)
             contentView.textSize = 20f
@@ -227,13 +235,15 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             )
         }
         (contentView as TextView).text = title
+        return this
     }
 
-    fun setContentView(view: View?) {
+    fun setContentView(view: View?): ActionBar{
         if (contentView != null)
             removeView(contentView)
         contentView = view
         addView(contentView, if (navigationView == null) 0 else 1)
+        return this
     }
 
     fun setBadgeVisibility(itemId: Int, isVisible: Boolean) {
@@ -513,8 +523,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         editText = EditText(context)
         editText!!.background = null
         editText!!.visibility = View.GONE
-        editText!!.setTextColor(Theme.black)
-        editText!!.setHintTextColor(Theme.black.alpha(30))
+        editText!!.setTextColor(Theme.white)
+        editText!!.setHintTextColor(Theme.white.alpha(60))
 
         searchCloseButton = ImageView(context)
         searchCloseButton!!.setPadding(dp(12))
@@ -522,11 +532,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         searchCloseButton!!.setOnClickListener {
             editText!!.text.clear()
         }
-        searchCloseButton!!.setImageDrawable(
-            R.drawable._ic_cross.coloredDrawable(
-                Theme.black
-            )
-        )
+        searchCloseButton!!.setImageDrawable(R.drawable._ic_cross.drawable())
 
         addView(searchCloseButton, 0)
         addView(editText, 0)
@@ -823,7 +829,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                 imageView.setPadding(dp(12))
                 if (icon != 0)
                     imageView.setImageResource(icon)
-                imageView.colorFilter = PorterDuffColorFilter(Theme.black, PorterDuff.Mode.SRC_IN)
+                imageView.colorFilter = PorterDuffColorFilter(Theme.white, PorterDuff.Mode.SRC_IN)
                 imageView.background = makeCircleRippleDrawable()
                 view = imageView
                 imageView
@@ -835,6 +841,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                 textView.setPadding(dp(8))
                 if (title != 0)
                     textView.setText(title)
+                textView.setTextColor(Theme.white)
                 textView.background = makeRippleDrawable()
                 view = textView
                 textView

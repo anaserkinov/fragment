@@ -39,7 +39,6 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         DrawerArrowDrawable(context)
     }
     private val backDrawable by lazy {
-
         BackDrawable(false)
     }
 
@@ -135,7 +134,6 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
                 navigationView = BadgeImageView(context)
                 navigationView!!.setPadding(dp(12))
                 navigationView!!.background = makeCircleRippleDrawable()
-                var t = true
                 navigationView!!.setOnClickListener {
                     if (editText?.visibility == View.VISIBLE) {
                         closeSearchMode()

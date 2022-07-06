@@ -123,6 +123,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
 
     var shouldAddToContainer: Boolean = true
 
+    private var tempNavigationType = 0
     var navigationType: Int = BACK
         set(value) {
             field = value
@@ -273,6 +274,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
     }
 
     private fun closeSearchMode() {
+        navigationType = tempNavigationType
         searchCloseButton!!.visibility = View.GONE
         editText!!.hideKeyboard()
         editText!!.visibility = View.GONE
@@ -541,6 +543,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             if (layoutParams.flags and LayoutParams.SEARCH == 0)
                 actionListener.onAction(layoutParams.itemId)
             else {
+                tempNavigationType = navigationType
+                navigationType = BACK
                 searchCloseButton!!.visibility = View.VISIBLE
                 editText!!.visibility = View.VISIBLE
                 editText!!.showKeyboard()

@@ -159,9 +159,8 @@ abstract class Fragment : LifecycleOwner {
     }
 
     open fun finishFragment(animated: Boolean) {
-        if (isFinished || parentLayout == null) {
+        if (finishing || isFinished || parentLayout == null)
             return
-        }
         finishing = true
         parentLayout!!.closeLastFragment(this, animated)
     }

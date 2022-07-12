@@ -1233,8 +1233,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private var containerView = GroupContainer(context)
     private var containerViewBack = GroupContainer(context)
     private var currentAnimationSet: AnimatorSet? = null
-    private var interpolator = FastOutLinearInInterpolator()
+
+    //    private var interpolator = FastOutLinearInInterpolator()
     private var currentGroupId = 0
+    val fragmentsCount: Int
+        get() = fragmentStack.size
 
     private var oldFragment: Fragment? = null
     private var newFragment: Fragment? = null
@@ -2120,24 +2123,25 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         }
     }
 
-    fun popFragmentsUntil(
-        currentFragment: Fragment,
-        endIndexOffsetFromCurrent: Int,
-        startIndex: Int = 0
+    fun popFragmentRange(
+        start: Int,
+        end: Int
     ) {
-        var lastIndex = fragmentStack.indexOf(currentFragment) + endIndexOffsetFromCurrent
-        if (lastIndex == -1 || lastIndex >= fragmentStack.size)
-            return
-        while (startIndex != lastIndex) {
-            val currentScreen = fragmentStack[startIndex]
+        var start = start
+        val step = if (start < end)
+            1
+        else
+            -1
+        while (start != end) {
+            val currentScreen = fragmentStack[start]
             if (currentScreen.groupId == -2) {
                 (parentActivity.supportFragmentManager.findFragmentByTag("Sheet") as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
-                fragmentStack.removeAt(startIndex)
+                fragmentStack.removeAt(start)
             } else {
                 currentScreen.onPrePause()
                 finishFragment(currentScreen)
             }
-            lastIndex--
+            start += step
         }
     }
 
@@ -2195,6 +2199,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     fun isAddedToStack(fragment: Fragment): Boolean = fragmentStack.contains(fragment)
 
+    fun indexOf(fragment: Fragment) = fragmentStack.indexOf(fragment)
 
 //    override fun onConfigurationChanged(newConfig: Configuration?) {
 //        super.onConfigurationChanged(newConfig)

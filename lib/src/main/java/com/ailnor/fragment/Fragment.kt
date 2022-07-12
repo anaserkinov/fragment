@@ -22,10 +22,16 @@ import androidx.lifecycle.LifecycleRegistry
 
 abstract class Fragment : LifecycleOwner {
 
+    interface LifecycleCallback{
+        fun onChange(state: Lifecycle.Event)
+    }
+
     var viewLifecycleOwner: LifecycleOwner
         private set
     private lateinit var viewLifecycleRegistry: LifecycleRegistry
     private var lifecycleRegistry: LifecycleRegistry
+
+    var lifecycleCallback: LifecycleCallback? = null
 
     private var isFinished = false
         set(value) {
@@ -41,6 +47,11 @@ abstract class Fragment : LifecycleOwner {
     var groupId = -1
     var innerGroupId = -1
     var fragmentId = -1
+
+    val myIndex: Int
+        get() = parentLayout!!.indexOf(this)
+
+    fun fragmentsCount() = parentLayout
 
     val context: Context
         get() = parentLayout!!.context
@@ -83,7 +94,7 @@ abstract class Fragment : LifecycleOwner {
                 if (hasToolbar && parentLayout != null && actionBar == null) {
                     actionBar = createActionBar(parentLayout!!.context)
                     setUpActionBar(requiredActionBar)
-                    requiredActionBar.actionListener = object: ActionBar.ActionListener{
+                    requiredActionBar.actionListener = object : ActionBar.ActionListener {
                         override fun onAction(action: Int) {
                             onOptionsItemSelected(action)
                         }
@@ -128,7 +139,7 @@ abstract class Fragment : LifecycleOwner {
     var actionBar: ActionBar? = null
         protected set
     val requiredActionBar: ActionBar
-    get() = actionBar!!
+        get() = actionBar!!
 
     protected var inTransitionAnimation = false
     protected var fragmentBeginToShow = false
@@ -154,7 +165,7 @@ abstract class Fragment : LifecycleOwner {
 
     protected abstract fun onCreateView(context: Context): View
 
-    open fun onViewCreated(){
+    open fun onViewCreated() {
 
     }
 
@@ -165,7 +176,7 @@ abstract class Fragment : LifecycleOwner {
         parentLayout!!.closeLastFragment(this, animated)
     }
 
-    fun popScreensFromStack(count: Int, removeLatest: Boolean){
+    fun popScreensFromStack(count: Int, removeLatest: Boolean) {
         parentLayout?.popScreensFromStack(count, removeLatest)
     }
 
@@ -180,7 +191,7 @@ abstract class Fragment : LifecycleOwner {
         return finishing
     }
 
-    open fun onAttackToContext(context: Context){}
+    open fun onAttackToContext(context: Context) {}
 
     @CallSuper
     open fun onFragmentCreate(): Boolean {
@@ -197,9 +208,10 @@ abstract class Fragment : LifecycleOwner {
     open fun onFragmentDestroy() {
         isFinished = true
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        lifecycleCallback?.onChange(Lifecycle.Event.ON_DESTROY)
     }
 
-    fun reCreate(){
+    fun reCreate() {
         lifecycleRegistry = LifecycleRegistry(this)
         isFinished = false
         finishing = false
@@ -210,7 +222,7 @@ abstract class Fragment : LifecycleOwner {
         return ActionBar(context)
     }
 
-    open fun setUpActionBar(actionBar: ActionBar){
+    open fun setUpActionBar(actionBar: ActionBar) {
 
     }
 
@@ -226,7 +238,7 @@ abstract class Fragment : LifecycleOwner {
 
     fun resume() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-        if (!isStarted){
+        if (!isStarted) {
             isStarted = true
             onStart()
         }
@@ -332,7 +344,7 @@ abstract class Fragment : LifecycleOwner {
         return true
     }
 
-    open fun onBeginSlide(){}
+    open fun onBeginSlide() {}
 
     open fun isSwipeBackEnabled(ev: MotionEvent): Boolean {
         return true
@@ -352,6 +364,7 @@ abstract class Fragment : LifecycleOwner {
     open fun onTransitionAnimationEnd(isOpen: Boolean, backward: Boolean) {
         inTransitionAnimation = false
     }
+
 
     open fun onCreateOptionsMenu() {}
 
@@ -419,7 +432,6 @@ abstract class Fragment : LifecycleOwner {
     }
 
     open fun onGetFirstInStack() {}
-
 
 
 }

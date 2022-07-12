@@ -19,6 +19,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
+import com.ailnor.core.Utilities
 
 abstract class Fragment : LifecycleOwner {
 
@@ -151,6 +152,8 @@ abstract class Fragment : LifecycleOwner {
         viewLifecycleRegistry = LifecycleRegistry(viewLifecycleOwner)
 
         lifecycleRegistry = LifecycleRegistry(this)
+
+        fragmentId = Utilities.generateFragmentId()
     }
 
     override fun getLifecycle(): Lifecycle {
@@ -286,10 +289,10 @@ abstract class Fragment : LifecycleOwner {
     fun presentFragment(
         screen: Fragment,
         removeLast: Boolean = false,
-        forceWithoutAnimation: Boolean = false
-    ) {
-        parentLayout?.presentFragmentGroup(screen, removeLast, forceWithoutAnimation)
-    }
+        forceWithoutAnimation: Boolean = false,
+        uniqueWith: Int = -1
+    ): Boolean? = parentLayout?.presentFragmentGroup(screen, removeLast, forceWithoutAnimation, uniqueWith)
+
 
     fun nextScreen(
         screen: Fragment,

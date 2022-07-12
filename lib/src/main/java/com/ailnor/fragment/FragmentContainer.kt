@@ -1643,15 +1643,16 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         screen: Fragment,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false,
-    ): Boolean {
-        return presentFragment(screen, true, removeLast, forceWithoutAnimation)
-    }
+        uniqueWith: Int = -1
+    ): Boolean = presentFragment(screen, true, removeLast, forceWithoutAnimation, uniqueWith)
+
 
     fun presentFragment(
         screen: Fragment,
         newGroup: Boolean = false,
         removeLast: Boolean = false,
-        forceWithoutAnimation: Boolean = false
+        forceWithoutAnimation: Boolean = false,
+        uniqueWith: Int = -1
     ): Boolean {
         if (!inAnimation)
             return presentFragmentInternal(
@@ -1659,12 +1660,13 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 newGroup,
                 removeLast,
                 false,
-                forceWithoutAnimation
+                forceWithoutAnimation,
+                uniqueWith
             )
         else if (frameAnimationFinishRunnable == null)
             frameAnimationFinishRunnable = Runnable {
                 frameAnimationFinishRunnable = null
-                presentFragmentInternal(screen, newGroup, removeLast, false, forceWithoutAnimation)
+                presentFragmentInternal(screen, newGroup, removeLast, false, forceWithoutAnimation, uniqueWith)
             }
         return false
     }
@@ -1674,9 +1676,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         newGroup: Boolean,
         removeLast: Boolean,
         innerGroup: Boolean,
-        forceWithoutAnimation: Boolean
+        forceWithoutAnimation: Boolean,
+        uniqueWith: Int
     ): Boolean {
-        if (!fragment.onFragmentCreate())
+        if (!fragment.onFragmentCreate() || uniqueWith != -1 && fragmentStack.any { it.fragmentId == uniqueWith })
             return false
 
         if (parentActivity.currentFocus != null && fragment.hideKeyboardOnShow())
@@ -1789,7 +1792,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     fun nextScreenInnerGroup(
         fragment: Fragment,
-        forceWithoutAnimation: Boolean = false
+        forceWithoutAnimation: Boolean = false,
+        uniqueWith: Int = -1
     ): Boolean {
         val removeLast = if (fragmentStack.size > 1) {
             fragmentStack[fragmentStack.size - 1].innerGroupId == currentGroupId + 1
@@ -1797,12 +1801,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             false
 
         if (!inAnimation)
-            return nextScreenInnerGroupInternal(fragment, removeLast, forceWithoutAnimation)
+            return nextScreenInnerGroupInternal(fragment, removeLast, forceWithoutAnimation, uniqueWith)
         else if (frameAnimationFinishRunnable == null)
             frameAnimationFinishRunnable = Runnable {
                 frameAnimationFinishRunnable = null
 
-                nextScreenInnerGroupInternal(fragment, removeLast, forceWithoutAnimation)
+                nextScreenInnerGroupInternal(fragment, removeLast, forceWithoutAnimation, uniqueWith)
             }
         return false
     }
@@ -1810,10 +1814,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private fun nextScreenInnerGroupInternal(
         fragment: Fragment,
         removeLast: Boolean,
-        forceWithoutAnimation: Boolean
+        forceWithoutAnimation: Boolean,
+        uniqueWith: Int
     ): Boolean {
         return if (!Utilities.isLandscapeTablet)
-            presentFragmentInternal(fragment, false, removeLast, true, forceWithoutAnimation)
+            presentFragmentInternal(fragment, false, removeLast, true, forceWithoutAnimation, uniqueWith)
         else
             nextScreenInternal(fragment, removeLast, true, forceWithoutAnimation)
     }

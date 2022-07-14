@@ -218,6 +218,7 @@ abstract class Fragment : LifecycleOwner {
         lifecycleRegistry = LifecycleRegistry(this)
         isFinished = false
         finishing = false
+        isStarted = false
         isPaused = true
     }
 
@@ -233,6 +234,7 @@ abstract class Fragment : LifecycleOwner {
     open fun onOrientationChanged() {}
 
     open fun onStart() {}
+
     open fun onResume() {}
     open fun onPause() {}
 

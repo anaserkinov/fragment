@@ -11,7 +11,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
-import android.graphics.drawable.Drawable
 import android.os.Build
 import android.view.*
 import android.view.animation.Animation
@@ -21,7 +20,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.math.MathUtils
 import androidx.core.view.children
-import androidx.interpolator.view.animation.FastOutLinearInInterpolator
 import com.ailnor.core.*
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlin.math.abs
@@ -1666,7 +1664,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         else if (frameAnimationFinishRunnable == null)
             frameAnimationFinishRunnable = Runnable {
                 frameAnimationFinishRunnable = null
-                presentFragmentInternal(screen, newGroup, removeLast, false, forceWithoutAnimation, uniqueWith)
+                presentFragmentInternal(
+                    screen,
+                    newGroup,
+                    removeLast,
+                    false,
+                    forceWithoutAnimation,
+                    uniqueWith
+                )
             }
         return false
     }
@@ -1801,12 +1806,22 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             false
 
         if (!inAnimation)
-            return nextScreenInnerGroupInternal(fragment, removeLast, forceWithoutAnimation, uniqueWith)
+            return nextScreenInnerGroupInternal(
+                fragment,
+                removeLast,
+                forceWithoutAnimation,
+                uniqueWith
+            )
         else if (frameAnimationFinishRunnable == null)
             frameAnimationFinishRunnable = Runnable {
                 frameAnimationFinishRunnable = null
 
-                nextScreenInnerGroupInternal(fragment, removeLast, forceWithoutAnimation, uniqueWith)
+                nextScreenInnerGroupInternal(
+                    fragment,
+                    removeLast,
+                    forceWithoutAnimation,
+                    uniqueWith
+                )
             }
         return false
     }
@@ -1818,7 +1833,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         uniqueWith: Int
     ): Boolean {
         return if (!Utilities.isLandscapeTablet)
-            presentFragmentInternal(fragment, false, removeLast, true, forceWithoutAnimation, uniqueWith)
+            presentFragmentInternal(
+                fragment,
+                false,
+                removeLast,
+                true,
+                forceWithoutAnimation,
+                uniqueWith
+            )
         else
             nextScreenInternal(fragment, removeLast, true, forceWithoutAnimation)
     }
@@ -1957,6 +1979,20 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             frameAnimationFinishRunnable = Runnable {
                 frameAnimationFinishRunnable = null
                 closeLastFragmentInternal(animated, openPrevious)
+            }
+    }
+
+    // Not completed, always close last fragment in stack !!!
+    fun closeFragment(fragmentId: Int, animated: Boolean = true) {
+        val fragmentIndex = fragmentStack.indexOfFirst { it.fragmentId == fragmentId }
+        if (fragmentIndex == -1)
+            return
+        if (!inAnimation)
+            closeLastFragmentInternal(animated, fragmentIndex != fragmentStack.size - 1)
+        else if (frameAnimationFinishRunnable == null)
+            frameAnimationFinishRunnable = Runnable {
+                frameAnimationFinishRunnable = null
+                closeLastFragmentInternal(animated, fragmentIndex != fragmentStack.size - 1)
             }
     }
 
@@ -2132,6 +2168,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         start: Int,
         end: Int
     ) {
+        var end = end
         var start = start
         val step = if (start < end)
             1
@@ -2146,7 +2183,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 currentScreen.onPrePause()
                 finishFragment(currentScreen)
             }
-            start += step
+            if (step < 0)
+                start += step
+            else
+                end --
         }
     }
 
@@ -2236,7 +2276,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     fun onOrientationChanged() {
         if (fragmentStack.isNotEmpty()) {
-            fragmentStack.forEach {
+            fragmentStack.toList().forEach {
                 it.onOrientationChanged()
             }
             if (fragmentStack.size > 1) {

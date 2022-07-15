@@ -214,7 +214,7 @@ abstract class Fragment : LifecycleOwner {
         lifecycleCallback?.onChange(Lifecycle.Event.ON_DESTROY)
     }
 
-    fun reCreate() {
+    open fun reCreate() {
         lifecycleRegistry = LifecycleRegistry(this)
         isFinished = false
         finishing = false

@@ -19,6 +19,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
+import com.ailnor.core.Theme
 import com.ailnor.core.Utilities
 
 abstract class Fragment : LifecycleOwner {
@@ -48,6 +49,9 @@ abstract class Fragment : LifecycleOwner {
     var groupId = -1
     var innerGroupId = -1
     var fragmentId = -1
+    var popup = false
+
+    var backgroundColor = Theme.white
 
     val myIndex: Int
         get() = parentLayout!!.indexOf(this)
@@ -179,6 +183,13 @@ abstract class Fragment : LifecycleOwner {
         parentLayout!!.closeLastFragment(this, animated)
     }
 
+    open fun finishFragmentById(animated: Boolean) {
+        if (finishing || isFinished || parentLayout == null)
+            return
+        finishing = true
+        parentLayout!!.closeFragment(fragmentId, animated)
+    }
+
     fun popScreensFromStack(count: Int, removeLatest: Boolean) {
         parentLayout?.popScreensFromStack(count, removeLatest)
     }
@@ -216,6 +227,7 @@ abstract class Fragment : LifecycleOwner {
 
     open fun reCreate() {
         lifecycleRegistry = LifecycleRegistry(this)
+        lifecycleCallback?.onChange(Lifecycle.Event.ON_CREATE)
         isFinished = false
         finishing = false
         isStarted = false
@@ -308,12 +320,18 @@ abstract class Fragment : LifecycleOwner {
         screen: Fragment,
         forceWithoutAnimation: Boolean = false
     ) {
-        parentLayout?.nextScreenInnerGroup(screen, forceWithoutAnimation)
+        parentLayout?.nextFragmentInnerGroup(screen, forceWithoutAnimation)
     }
 
-    fun presentFragmentAsSheet(screen: Fragment) {
-        parentLayout?.presentAsSheet(screen)
+    fun presentFragmentAsSheet(fragment: Fragment) {
+        parentLayout?.presentAsSheet(fragment)
     }
+
+    fun presentFragmentAsPopup(
+        fragment: Fragment,
+        uniqueWith: Int = -1
+    ): Boolean? = parentLayout?.presentFragmentAsPopUp(fragment, uniqueWith)
+
 
     open fun onReceive(vararg data: Any?) {
 

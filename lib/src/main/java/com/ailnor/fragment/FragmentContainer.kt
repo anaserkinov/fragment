@@ -1540,7 +1540,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         val clipLeft: Int
         val clipRight: Int
 
-        if (child == containerViewBack) {
+        if (child === containerViewBack) {
             clipRight = if (inAnimation || !drawShadow)
                 translationX + dp(1)
             else
@@ -1559,7 +1559,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         if (translationX != 0 || drawShadow) {
             val widthOffset = width - translationX
-            if (child == containerView && !drawShadow) {
+            if (child === containerView && !drawShadow) {
                 val alpha = MathUtils.clamp(widthOffset / dp(20f), 0f, 1f)
                 layerShadowDrawable.setBounds(
                     translationX - layerShadowDrawable.intrinsicWidth,
@@ -1569,7 +1569,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 )
                 layerShadowDrawable.alpha = (0xff * alpha).toInt()
                 layerShadowDrawable.draw(canvas)
-            } else if (child == containerViewBack) {
+            } else if (child === containerViewBack) {
                 val opacity = MathUtils.clamp(widthOffset / width.toFloat(), 0f, 0.8f)
                 scrimPaint.color = Color.argb((0x99 * opacity).toInt(), 0x00, 0x00, 0x00)
                 canvas.drawRect(
@@ -2183,11 +2183,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 currentAnimationSet!!.playTogether(translationXAnimation, alphaAnimation)
                 currentAnimationSet!!.start()
             } else {
-                containerViewBack.visibility = View.GONE
                 finishFragment(_oldFragment)
                 if (groupRemoved)
                     currentGroupId = fragmentStack[fragmentStack.size - 1].groupId
                 containerViewBack.visibility = View.GONE
+                bringChildToFront(containerView)
                 if (leftView == null) {
                     resumeFragment(newFragment!!, true)
                     newFragment = null

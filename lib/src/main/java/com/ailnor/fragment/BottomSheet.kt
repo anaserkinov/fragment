@@ -23,7 +23,7 @@ class BottomSheet(private val screen: Fragment? = null) : BottomSheetDialogFragm
         dialog.setOnShowListener {
             (it as BottomSheetDialog).findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
                 ?.let { view ->
-                    if (Utilities.isLandscapeTablet) {
+                    if (Utilities.isLandscape) {
                         val bottomSheetBehavior = BottomSheetBehavior.from(view)
                         bottomSheetBehavior.peekHeight = dp(1000)
                         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED

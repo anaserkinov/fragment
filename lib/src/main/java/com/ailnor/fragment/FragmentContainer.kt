@@ -1302,7 +1302,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         startedTrackingX = x.toInt()
         beginTrackingSent = false
 
-        if (Utilities.isLandscapeTablet && containerView.isSplit()) {
+        if (Utilities.isLandscape && containerView.isSplit()) {
             containerView.prepareForMove()
         } else {
             containerViewBack.translationX = 0f
@@ -1313,7 +1313,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             val newFragment2: Fragment?
             var leftView: View? = null
             var leftActionBar: ActionBar? = null
-            if (Utilities.isLandscapeTablet && fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == newFragment!!.groupId) {
+            if (Utilities.isLandscape && fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == newFragment!!.groupId) {
                 newFragment2 = fragmentStack[fragmentStack.size - 3]
                 leftView = newFragment2.savedView
                 if (leftView == null)
@@ -1433,7 +1433,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 fragmentStack[fragmentStack.size - 1].onBeginSlide()
                                 beginTrackingSent = true
                             }
-                            if (Utilities.isLandscapeTablet && containerView.isSplit())
+                            if (Utilities.isLandscape && containerView.isSplit())
                                 containerView.translateX(dx)
                             else {
                                 containerView.translationX = dx.toFloat()
@@ -1460,7 +1460,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             val velX = velocityTracker!!.xVelocity
                             val velY = velocityTracker!!.yVelocity
 
-                            if (Utilities.isLandscapeTablet && containerView.isSplit()) {
+                            if (Utilities.isLandscape && containerView.isSplit()) {
                                 containerView.finishTranslation(velX, velY)
                             } else {
                                 val x = containerView.x
@@ -1872,7 +1872,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         forceWithoutAnimation: Boolean,
         uniqueWith: Int
     ): Boolean {
-        return if (!Utilities.isLandscapeTablet)
+        return if (!Utilities.isLandscape)
             presentFragmentInternal(
                 fragment,
                 false,
@@ -1890,7 +1890,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         removeLast: Boolean,
         forceWithoutAnimation: Boolean = false
     ): Boolean {
-        if (!Utilities.isLandscapeTablet)
+        if (!Utilities.isLandscape)
             return presentFragment(fragment, false, removeLast, forceWithoutAnimation)
         else if (!inAnimation)
             return nextScreenInternal(fragment, removeLast, false, forceWithoutAnimation)
@@ -2049,7 +2049,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             if (fragmentStack[fragmentStack.size - 2].groupId == currentGroupId) {
                 groupRemoved = false
                 newFragment = fragmentStack[fragmentStack.size - 2]
-                if (Utilities.isLandscapeTablet) {
+                if (Utilities.isLandscape) {
                     oldFragment = _oldFragment
                     if (fragmentStack.size == 2 && fragmentStack[fragmentStack.size - 2].groupId == currentGroupId ||
                         fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == currentGroupId
@@ -2092,7 +2092,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
             var leftView: View? = null
             var leftActionBar: ActionBar? = null
-            if (Utilities.isLandscapeTablet && fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == newFragment!!.groupId) {
+            if (Utilities.isLandscape && fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == newFragment!!.groupId) {
                 newFragment2 = fragmentStack[fragmentStack.size - 3]
                 leftView = newFragment2!!.savedView
                 if (leftView == null)
@@ -2323,7 +2323,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             if (fragmentStack.size > 1) {
                 val preScreen = fragmentStack[fragmentStack.size - 2]
                 if (preScreen.groupId == fragmentStack[fragmentStack.size - 1].groupId) {
-                    if (Utilities.isLandscapeTablet) {
+                    if (Utilities.isLandscape) {
                         newFragment = preScreen
                         fragmentStack[fragmentStack.size - 1].actionBar?.drawableRotation = 1f
                         var screenView = preScreen.savedView

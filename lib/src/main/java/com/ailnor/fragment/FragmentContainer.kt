@@ -64,8 +64,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         var weight = 1f
         var leftOffset = 0F
         private val headerShadowDrawable = R.drawable.header_shadow.drawable()
-        
-        fun setView(view: View, color: Int){
+
+        fun setView(view: View, color: Int) {
             addView(view)
             setBackgroundColor(color)
         }
@@ -92,6 +92,17 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             for (i in 0 until childCount) {
                 val child = getChildAt(i)
                 if (child !is ActionBar && child.visibility != View.GONE)
+//                    child.measure(
+//                        widthMeasureSpec,
+//                        measureSpec_exactly(
+//                            height - if (child.fitsSystemWindows)
+//                                -Utilities.statusBarHeight
+//                            else if (actionBarHeight != 0)
+//                                actionBarHeight
+//                            else
+//                                (actionBarHeight + Utilities.statusBarHeight)
+//                        )
+//                    )
                     measureChildWithMargins(
                         child,
                         widthMeasureSpec,
@@ -184,13 +195,13 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             addView(leftFrame)
         }
 
-        fun addGroup(view: View, actionBar: ActionBar?, backgroudColor: Int) {
+        fun addGroup(view: View, actionBar: ActionBar?, backgroundColor: Int) {
             rightFrame?.updateParams(0f, 0f)
             frame?.updateParams(0f, 0f)
             leftFrame.updateParams(1f, 0f)
             requestLayout()
             leftFrame.addView(view)
-            leftFrame.setBackgroundColor(backgroudColor)
+            leftFrame.setBackgroundColor(backgroundColor)
             if (actionBar != null)
                 leftFrame.addView(actionBar)
         }
@@ -252,7 +263,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             } else {
                 if (leftFrame.weight > 0.5f) {
                     leftFrame.measure(
-                        widthMeasureSpec,
+                        measureSpec_exactly((width * leftFrame.weight).toInt()),
                         heightMeasureSpec
                     )
                     rightFrame?.measure(
@@ -329,8 +340,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 }
             } else {
                 if (leftFrame.weight > 0.5f) {
+                    val leftOffset = leftFrame.leftOffset.toInt()
                     leftFrame.layout(
-                        0, 0, measuredWidth, measuredHeight
+                        leftOffset, 0, leftOffset + leftFrame.measuredWidth, measuredHeight
                     )
                     rightFrame?.layout(
                         0, 0, 0, 0
@@ -654,6 +666,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             isSlidingLastFragment = false
         }
 
+        //region NEXT
         fun nextScreen(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
             if (forceWithoutAnimation) {
                 leftFrame.updateParams(0.35f, 0f)
@@ -813,7 +826,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 }
             )
         }
+        //endregion
 
+        //region PREVIOUS
         fun previousScreen(view: View?, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
             if (forceWithoutAnimation) {
                 if (oldFragment != null) {
@@ -1043,7 +1058,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 }
             )
         }
+        //endregion
 
+        //region LEFT
         fun openLeft(view: View, actionBar: ActionBar?) {
             startOpenLeftAnimation(view, actionBar)
         }
@@ -1158,8 +1175,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 }
             )
         }
+        //endregion
 
-
+        //region RIGHT
         fun replaceRight(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
             startReplaceAnimation(view, actionBar)
         }
@@ -1224,6 +1242,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 }
             )
         }
+        //endregion
+
+        //region MODAL
+
+        //endregion
     }
 
 
@@ -1355,7 +1378,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private fun onSlideAnimationEnd(backAnimation: Boolean) {
         if (backAnimation)
-            pauseFragment(fragmentStack[fragmentStack.size - 2], !fragmentStack[fragmentStack.size - 1].popup)
+            pauseFragment(
+                fragmentStack[fragmentStack.size - 2],
+                !fragmentStack[fragmentStack.size - 1].popup
+            )
         else {
             val fragment = fragmentStack[fragmentStack.size - 1]
             if (fragment.groupId != fragmentStack[fragmentStack.size - 2].groupId)
@@ -1686,7 +1712,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     fun presentFragmentAsPopUp(
         fragment: Fragment,
         uniqueWith: Int = -1
-    ): Boolean{
+    ): Boolean {
         fragment.popup = true
         if (!inAnimation)
             return presentFragmentInternal(
@@ -1748,7 +1774,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (fragment.actionBar != null && fragment.requiredActionBar.shouldAddToContainer) {
             val parent = fragment.requiredActionBar.parent as? ViewGroup
             parent?.removeView(fragment.actionBar)
-            containerViewBack.addGroup(screenView, fragment.requiredActionBar, fragment.backgroundColor)
+            containerViewBack.addGroup(
+                screenView,
+                fragment.requiredActionBar,
+                fragment.backgroundColor
+            )
         } else
             containerViewBack.addGroup(screenView, null, fragment.backgroundColor)
 
@@ -2023,7 +2053,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     // Not completed, always close last fragment in stack !!!
-    fun closeFragment(fragmentId: Int, animated: Boolean = true): Boolean{
+    fun closeFragment(fragmentId: Int, animated: Boolean = true): Boolean {
         val fragmentIndex = fragmentStack.indexOfFirst { it.fragmentId == fragmentId }
         if (fragmentIndex == -1)
             return false

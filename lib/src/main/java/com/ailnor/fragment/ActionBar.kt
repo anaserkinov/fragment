@@ -20,6 +20,7 @@ import androidx.core.view.isVisible
 import androidx.core.view.setPadding
 import com.ailnor.core.*
 import com.ailnor.core.R
+import com.ailnor.core.Theme.alpha
 import kotlin.math.max
 
 

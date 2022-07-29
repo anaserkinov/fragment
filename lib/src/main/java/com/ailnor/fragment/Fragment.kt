@@ -56,7 +56,7 @@ abstract class Fragment : LifecycleOwner {
     val myIndex: Int
         get() = parentLayout!!.indexOf(this)
 
-    fun fragmentsCount() = parentLayout
+    fun fragmentsCount() = parentLayout!!.fragmentsCount
 
     val context: Context
         get() = parentLayout!!.context

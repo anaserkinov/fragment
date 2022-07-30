@@ -308,7 +308,7 @@ abstract class Fragment : LifecycleOwner {
     ): Boolean? = parentLayout?.presentFragmentGroup(screen, removeLast, forceWithoutAnimation, uniqueWith)
 
 
-    fun nextScreen(
+    fun nextFragment(
         screen: Fragment,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false

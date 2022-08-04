@@ -1245,7 +1245,22 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         //endregion
 
         //region MODAL
+        fun showAsModal(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean){
+            if (forceWithoutAnimation){
+                leftFrame.updateParams(0.65f, 0f)
+                if (rightFrame == null) {
+                    rightFrame = Container(context)
+                    rightFrame!!.weight = 0.35f
+                    addView(rightFrame)
+                } else
+                    rightFrame!!.updateParams(0.35f, 0f)
+            } else
+                startModelShowingAnimation(view, actionBar)
+        }
 
+        fun startModelShowingAnimation(view: View, actionBar: ActionBar?){
+
+        }
         //endregion
     }
 

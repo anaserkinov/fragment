@@ -1814,7 +1814,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             if (!fragment.popup)
                 containerViewBack.visibility = GONE
             containerView.visibility = View.VISIBLE
-            bringChildToFront(containerView)
             if (fragmentStack.size > 1) {
                 val oldFragment = fragmentStack[fragmentStack.size - 2]
                 oldFragment.onPrePause()
@@ -1830,7 +1829,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             containerView.translationX = measuredWidth * 0.5f
             containerView.alpha = 0f
             containerView.visibility = VISIBLE
-            bringChildToFront(containerView)
 
             currentAnimationSet = AnimatorSet()
             currentAnimationSet!!.duration = 200

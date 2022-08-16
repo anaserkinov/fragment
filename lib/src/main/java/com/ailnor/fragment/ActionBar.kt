@@ -49,6 +49,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         private set
     private var searchCloseButton: ImageView? = null
     private val overFlowView: BadgeImageView = BadgeImageView(context)
+    private var contentWithMargin = true
 
     var drawableRotation: Float = 0f
     set(value) {
@@ -82,6 +83,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         popupMenu.anchorView = overFlowView
         adapter = Adapter(context)
         popupMenu.setOnItemClickListener { _, _, position, _ ->
+            if (!isEnabled)
+                return@setOnItemClickListener
             popupMenu.dismiss()
             actionListener.onAction(activeOverflowItems[position].itemId)
         }
@@ -168,8 +171,6 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         setBackgroundColor(Theme.colorPrimary)
         this.navigationType = navigationType
 
-        setPadding(dp(4), dp(8), dp(4), dp(8))
-
         val overFlow = context.resources.getDrawable(R.drawable._ic_over_flow).mutate()
         overFlow.setTint(color)
         overFlowView.setPadding(dp(12))
@@ -228,6 +229,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
             contentView.setPadding(dp(4), 0, dp(4), 0)
             contentView.maxLines = 1
             contentView.ellipsize = TextUtils.TruncateAt.END
+            contentWithMargin = true
             this.contentView = contentView
             addView(
                 contentView,
@@ -238,7 +240,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         return this
     }
 
-    fun setContentView(view: View?): ActionBar{
+    fun setContentView(view: View?, withMargin: Boolean): ActionBar{
+        contentWithMargin = withMargin
         if (contentView != null)
             removeView(contentView)
         contentView = view
@@ -398,7 +401,7 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
 
         setMeasuredDimension(
             realWidth,
-            Utilities.statusBarHeight + dp(64)
+            Utilities.statusBarHeight + max(dp(64), contentView?.measuredHeight ?: 0)
         )
     }
 
@@ -435,6 +438,10 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
         }
 
         val firstActionIndex = if (contentView?.visibility == View.VISIBLE) {
+            val left = if (contentWithMargin)
+                left
+            else
+                (left - dp(4))
             contentView?.layout(
                 left,
                 (measuredHeight + top - contentView!!.measuredHeight) / 2,
@@ -541,6 +548,8 @@ class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(contex
 
     fun setItemClickListener(view: View, layoutParams: LayoutParams) {
         view.setOnClickListener {
+            if (!isEnabled)
+                return@setOnClickListener
             if (layoutParams.flags and LayoutParams.SEARCH == 0)
                 actionListener.onAction(layoutParams.itemId)
             else {

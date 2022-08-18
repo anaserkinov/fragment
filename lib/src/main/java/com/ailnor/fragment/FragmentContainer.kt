@@ -2454,6 +2454,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         val lastFragment: Fragment = fragmentStack[fragmentStack.size - 1]
         if (!lastFragment.onBackPressed()) {
             if (fragmentStack.isNotEmpty()) {
+                if (fragmentStack.size == 1)
+                    return false
                 closeLastFragment(true)
                 return fragmentStack.isNotEmpty()
             }

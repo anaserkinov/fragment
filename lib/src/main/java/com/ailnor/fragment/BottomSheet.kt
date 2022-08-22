@@ -16,14 +16,14 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.ailnor.core.Utilities
 import com.ailnor.core.dp
 
-class BottomSheet(private val screen: Fragment? = null) : BottomSheetDialogFragment() {
+class BottomSheet(private val screen: Fragment? = null, private val fullScreen: Boolean) : BottomSheetDialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = BottomSheetDialog(requireContext(), theme)
         dialog.setOnShowListener {
             (it as BottomSheetDialog).findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
                 ?.let { view ->
-                    if (Utilities.isLandscape) {
+                    if (Utilities.isLandscape || fullScreen) {
                         val bottomSheetBehavior = BottomSheetBehavior.from(view)
                         bottomSheetBehavior.peekHeight = dp(1000)
                         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED

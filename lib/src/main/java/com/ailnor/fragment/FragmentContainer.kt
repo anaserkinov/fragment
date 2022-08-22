@@ -2001,11 +2001,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         return true
     }
 
-    fun presentAsSheet(screen: Fragment) {
+    fun presentAsSheet(screen: Fragment, fullScreen: Boolean = false) {
         screen.parentLayout = this
         screen.groupId = -2
         fragmentStack.add(screen)
-        BottomSheet(screen).show(parentActivity.supportFragmentManager, "Sheet")
+        BottomSheet(screen, fullScreen).show(parentActivity.supportFragmentManager, "Sheet")
     }
 
     fun addFragmentToStack(screen: Fragment, newGroup: Boolean = true): Boolean {

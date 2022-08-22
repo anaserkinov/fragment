@@ -323,8 +323,8 @@ abstract class Fragment : LifecycleOwner {
         parentLayout?.nextFragmentInnerGroup(screen, forceWithoutAnimation)
     }
 
-    fun presentFragmentAsSheet(fragment: Fragment) {
-        parentLayout?.presentAsSheet(fragment)
+    fun presentFragmentAsSheet(fragment: Fragment, fullScreen: Boolean = false) {
+        parentLayout?.presentAsSheet(fragment, fullScreen)
     }
 
     fun presentFragmentAsPopup(

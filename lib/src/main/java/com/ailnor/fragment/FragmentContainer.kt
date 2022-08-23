@@ -1288,6 +1288,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     init {
         containerViewBack.visibility = View.GONE
+        containerView.isClickable = true
+        containerViewBack.isClickable = true
         addView(containerViewBack)
         addView(containerView)
 
@@ -1425,7 +1427,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     override fun onTouchEvent(ev: MotionEvent?): Boolean {
         if (!isSlideFinishing && inAnimation == touching) {
-            if (fragmentStack.size > 1 || clearable) {
+            if (fragmentStack.size > 1 || (clearable && fragmentStack.size != 0)) {
                 if (ev == null) {
                     startedTrackingX = 0
                     startedTrackingY = 0

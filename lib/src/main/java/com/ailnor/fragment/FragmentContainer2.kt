@@ -94,15 +94,18 @@
 //            }
 //
 //        fun setViews(view: View, actionBar: View?, color: Int) {
+//            view.isClickable = true
 //            this.mView = view
 //            this.actionBar = actionBar
 //            view.setBackgroundColor(color)
 //            parent.addView(view)
-//            if (actionBar != null)
+//            if (actionBar != null) {
+//                actionBar.isClickable = true
 //                parent.addView(actionBar)
+//            }
 //        }
 //
-//        fun bringChildsToFront() {
+//        fun bringChildrenToFront() {
 //            parent.bringChildToFront(mView)
 //            if (actionBar != null)
 //                parent.bringChildToFront(actionBar)
@@ -1705,7 +1708,7 @@
 //        fragmentStack.add(fragment)
 //
 //        frame.visibility = View.VISIBLE
-//        frame.bringChildsToFront()
+//        frame.bringChildrenToFront()
 //
 //        if (forceWithoutAnimation) {
 //            frame.translationX = 0f

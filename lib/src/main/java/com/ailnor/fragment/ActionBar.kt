@@ -24,7 +24,7 @@ import com.ailnor.core.Theme.alpha
 import kotlin.math.max
 
 
-class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(context) {
+open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(context) {
 
     companion object {
         const val NONE = -1

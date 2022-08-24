@@ -94,7 +94,6 @@
 //            }
 //
 //        fun setViews(view: View, actionBar: View?, color: Int) {
-//            view.isClickable = true
 //            this.mView = view
 //            this.actionBar = actionBar
 //            view.setBackgroundColor(color)

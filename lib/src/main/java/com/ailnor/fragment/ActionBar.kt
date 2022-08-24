@@ -52,12 +52,12 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
     private var contentWithMargin = true
 
     var drawableRotation: Float = 0f
-    set(value) {
-        backDrawable.setRotation(value, false)
-    }
+        set(value) {
+            backDrawable.setRotation(value, false)
+        }
 
     val drawableCurrentRotation: Float
-    get() = backDrawable.currentRotation
+        get() = backDrawable.currentRotation
 
     var drawShadow = true
     private var adapter: Adapter? = null
@@ -168,6 +168,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         }
 
     init {
+        isClickable = true
         setBackgroundColor(Theme.colorPrimary)
         this.navigationType = navigationType
 
@@ -211,16 +212,16 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         return max(maxWidth, dp(200))
     }
 
-    fun createMenu(): Builder{
+    fun createMenu(): Builder {
         return Builder.init(this)
     }
 
-    fun setTitle(@StringRes res: Int): ActionBar{
+    fun setTitle(@StringRes res: Int): ActionBar {
         setTitle(context.getString(res))
         return this
     }
 
-    fun setTitle(title: String?): ActionBar{
+    fun setTitle(title: String?): ActionBar {
         if (contentView == null) {
             val contentView = TextView(context)
             contentView.textSize = 20f
@@ -240,7 +241,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         return this
     }
 
-    fun setContentView(view: View?, withMargin: Boolean): ActionBar{
+    fun setContentView(view: View?, withMargin: Boolean): ActionBar {
         contentWithMargin = withMargin
         if (contentView != null)
             removeView(contentView)
@@ -358,7 +359,10 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                                 val preChild = getChildAt(i - 1)
                                 preChild.visibility = View.GONE
                                 val preChildParams = preChild.layoutParams as LayoutParams
-                                if (preChildParams.flags and LayoutParams.SHOW_AS_ACTION_ALWAYS == 0 && !activeOverflowItems.contains(preChildParams))
+                                if (preChildParams.flags and LayoutParams.SHOW_AS_ACTION_ALWAYS == 0 && !activeOverflowItems.contains(
+                                        preChildParams
+                                    )
+                                )
                                     activeOverflowItems.add(preChild.layoutParams as LayoutParams)
                                 leftSpace += preChild.measuredWidth
                                 index++
@@ -401,7 +405,13 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
         setMeasuredDimension(
             realWidth,
-            Utilities.statusBarHeight + max(dp(64), contentView?.measuredHeight ?: 0)
+            if (contentView != null) {
+                if (contentView!!.fitsSystemWindows)
+                    max(dp(64), contentView!!.measuredHeight)
+                else
+                    Utilities.statusBarHeight + max(dp(64), contentView?.measuredHeight ?: 0)
+            } else
+                Utilities.statusBarHeight + dp(64)
         )
     }
 
@@ -442,7 +452,11 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 left
             else
                 (left - dp(4))
-            contentView?.layout(
+            val top = if (contentView!!.fitsSystemWindows)
+                0
+            else
+                top
+            contentView!!.layout(
                 left,
                 (measuredHeight + top - contentView!!.measuredHeight) / 2,
                 left + contentView!!.measuredWidth,

@@ -1288,8 +1288,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     init {
         containerViewBack.visibility = View.GONE
-        containerView.isClickable = true
-        containerViewBack.isClickable = true
         addView(containerViewBack)
         addView(containerView)
 

@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.lifecycle.Lifecycle
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -62,14 +63,18 @@ class BottomSheet(private val screen: Fragment? = null, private val fullScreen: 
 
     override fun onResume() {
         super.onResume()
-        screen?.onPreResume()
-        screen?.resume()
+        if (screen?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.CREATED) == true) {
+            screen.onPreResume()
+            screen.resume()
+        }
     }
 
     override fun onPause() {
         super.onPause()
-        screen?.onPrePause()
-        screen?.pause()
+        if (screen?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true) {
+            screen.onPrePause()
+            screen.pause()
+        }
     }
 
     override fun onDestroy() {

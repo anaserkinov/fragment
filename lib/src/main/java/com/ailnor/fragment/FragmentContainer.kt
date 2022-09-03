@@ -1245,8 +1245,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         //endregion
 
         //region MODAL
-        fun showAsModal(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean){
-            if (forceWithoutAnimation){
+        fun showAsModal(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
+            if (forceWithoutAnimation) {
                 leftFrame.updateParams(0.65f, 0f)
                 if (rightFrame == null) {
                     rightFrame = Container(context)
@@ -1258,7 +1258,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 startModelShowingAnimation(view, actionBar)
         }
 
-        fun startModelShowingAnimation(view: View, actionBar: ActionBar?){
+        fun startModelShowingAnimation(view: View, actionBar: ActionBar?) {
 
         }
         //endregion
@@ -1817,10 +1817,20 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             if (fragmentStack.size > 1) {
                 val oldFragment = fragmentStack[fragmentStack.size - 2]
                 oldFragment.onPrePause()
+                val oldFragment2 = if (fragmentStack.size > 2) {
+                    val f = fragmentStack[fragmentStack.size - 3]
+                    if (f.groupId == oldFragment.groupId)
+                        f
+                    else
+                        null
+                } else
+                    null
                 if (removeLast)
                     finishFragment(oldFragment)
                 else
                     pauseFragment(oldFragment, !fragment.popup)
+                if (oldFragment2 != null)
+                    pauseFragment(oldFragment2, !fragment.popup)
             }
             fragment.onPreResume()
             resumeFragment(fragment, true)
@@ -1852,10 +1862,20 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 override fun onAnimationEnd(animation: Animator?) {
                     if (fragmentStack.size > 1) {
                         val oldFragment = fragmentStack[fragmentStack.size - 2]
+                        val oldFragment2 = if (fragmentStack.size > 2) {
+                            val f = fragmentStack[fragmentStack.size - 3]
+                            if (f.groupId == oldFragment.groupId)
+                                f
+                            else
+                                null
+                        } else
+                            null
                         if (removeLast)
                             finishFragment(oldFragment)
                         else
                             pauseFragment(oldFragment, !fragment.popup)
+                        if (oldFragment2 != null)
+                            pauseFragment(oldFragment2, !fragment.popup)
                     }
                     resumeFragment(fragment, true)
                     if (!fragment.popup)

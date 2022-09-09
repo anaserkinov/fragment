@@ -615,6 +615,25 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         }
     }
 
+    fun setItemColor(itemId: Int, color: Int): Boolean {
+        var layoutParams = activeOverflowItems.find {
+            it.itemId == itemId
+        }
+        if (layoutParams != null) {
+            layoutParams.color = color
+            if (layoutParams.flags == 0)
+                return true
+        }
+        layoutParams = children.find {
+            it.layoutParams is LayoutParams && (it.layoutParams as LayoutParams).itemId == itemId
+        }?.layoutParams as? LayoutParams
+        return if (layoutParams != null) {
+            layoutParams.color = color
+            true
+        } else
+            false
+    }
+
 //    fun setItemVisibility(itemId: Int, isVisible: Boolean): Boolean {
 //        var layoutParams = activeOverflowItems.find {
 //            it.itemId == itemId
@@ -844,6 +863,14 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 else if (view is BadgeTextView)
                     (view as BadgeTextView).isShowing = field
             }
+        var color = Theme.white
+        set(value){
+            field = value
+            if (view is ImageView)
+                (view as ImageView).setColorFilter(color)
+            else if (view is TextView)
+                (view as TextView).setTextColor(color)
+        }
 
         var flags = 0
 

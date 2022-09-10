@@ -1819,15 +1819,18 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 oldFragment.onPrePause()
                 val oldFragment2 = if (fragmentStack.size > 2) {
                     val f = fragmentStack[fragmentStack.size - 3]
-                    if (f.groupId == oldFragment.groupId)
+                    if (f.groupId == oldFragment.groupId || oldFragment.groupId == -2)
                         f
                     else
                         null
                 } else
                     null
-                if (removeLast)
-                    finishFragment(oldFragment)
-                else
+                if (removeLast) {
+                    if (oldFragment.groupId == -2)
+                        (parentActivity.supportFragmentManager.findFragmentByTag(oldFragment.fragmentId.toString()) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
+                    else
+                        finishFragment(oldFragment)
+                } else
                     pauseFragment(oldFragment, !fragment.popup)
                 if (oldFragment2 != null)
                     pauseFragment(oldFragment2, !fragment.popup)
@@ -1864,15 +1867,18 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         val oldFragment = fragmentStack[fragmentStack.size - 2]
                         val oldFragment2 = if (fragmentStack.size > 2) {
                             val f = fragmentStack[fragmentStack.size - 3]
-                            if (f.groupId == oldFragment.groupId)
+                            if (f.groupId == oldFragment.groupId || oldFragment.groupId == -2)
                                 f
                             else
                                 null
                         } else
                             null
-                        if (removeLast)
-                            finishFragment(oldFragment)
-                        else
+                        if (removeLast) {
+                            if (oldFragment.groupId == -2)
+                                (parentActivity.supportFragmentManager.findFragmentByTag(oldFragment.fragmentId.toString()) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
+                            else
+                                finishFragment(oldFragment)
+                        } else
                             pauseFragment(oldFragment, !fragment.popup)
                         if (oldFragment2 != null)
                             pauseFragment(oldFragment2, !fragment.popup)
@@ -2025,7 +2031,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         screen.parentLayout = this
         screen.groupId = -2
         fragmentStack.add(screen)
-        BottomSheet(screen, fullScreen).show(parentActivity.supportFragmentManager, "Sheet")
+        BottomSheet(screen, fullScreen).show(parentActivity.supportFragmentManager, screen.fragmentId.toString())
     }
 
     fun addFragmentToStack(screen: Fragment, newGroup: Boolean = true): Boolean {
@@ -2109,7 +2115,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         val _oldFragment = fragmentStack[fragmentStack.size - 1]
 
         if (_oldFragment.groupId == -2) {
-            (parentActivity.supportFragmentManager.findFragmentByTag("Sheet") as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
+            (parentActivity.supportFragmentManager.findFragmentByTag(_oldFragment.fragmentId.toString()) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
         } else if (fragmentStack.size != 1 || clearable) {
             val groupRemoved: Boolean
 

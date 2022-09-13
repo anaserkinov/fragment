@@ -854,6 +854,13 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             set(value) {
                 field = value
                 view?.isEnabled = field
+                if (view is TextView)
+                    (view as TextView).setTextColor(
+                        if (field)
+                            color
+                        else
+                            color.alpha(70)
+                    )
             }
         var showBadge = false
             set(value) {
@@ -864,13 +871,13 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                     (view as BadgeTextView).isShowing = field
             }
         var color = Theme.white
-        set(value){
-            field = value
-            if (view is ImageView)
-                (view as ImageView).setColorFilter(color)
-            else if (view is TextView)
-                (view as TextView).setTextColor(color)
-        }
+            set(value) {
+                field = value
+                if (view is ImageView)
+                    (view as ImageView).setColorFilter(color)
+                else if (view is TextView)
+                    (view as TextView).setTextColor(color)
+            }
 
         var flags = 0
 

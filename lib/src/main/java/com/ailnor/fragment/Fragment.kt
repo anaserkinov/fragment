@@ -298,7 +298,7 @@ abstract class Fragment : LifecycleOwner {
         parentLayout = null
     }
 
-    internal open fun onRemoveFromParent() {}
+    open fun onRemoveFromParent() {}
 
     fun presentFragment(
         screen: Fragment,

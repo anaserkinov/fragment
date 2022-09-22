@@ -1958,7 +1958,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             nextScreenInternal(fragment, removeLast, true, forceWithoutAnimation)
     }
 
-    fun nextScreen(
+    fun nextFragment(
         fragment: Fragment,
         removeLast: Boolean,
         forceWithoutAnimation: Boolean = false

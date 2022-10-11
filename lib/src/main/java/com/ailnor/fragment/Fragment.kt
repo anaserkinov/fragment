@@ -22,9 +22,9 @@ import androidx.lifecycle.LifecycleRegistry
 import com.ailnor.core.Theme
 import com.ailnor.core.Utilities
 
-abstract class Fragment : LifecycleOwner {
+abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
-    interface LifecycleCallback{
+    interface LifecycleCallback {
         fun onChange(state: Lifecycle.Event)
     }
 
@@ -34,6 +34,9 @@ abstract class Fragment : LifecycleOwner {
     private var lifecycleRegistry: LifecycleRegistry
 
     var lifecycleCallback: LifecycleCallback? = null
+
+    protected var arguments: Bundle? = null
+        private set
 
     private var isFinished = false
         set(value) {
@@ -150,6 +153,7 @@ abstract class Fragment : LifecycleOwner {
     protected var fragmentBeginToShow = false
 
     init {
+        this.arguments = arguments
         viewLifecycleOwner = LifecycleOwner {
             return@LifecycleOwner viewLifecycleRegistry
         }
@@ -305,7 +309,8 @@ abstract class Fragment : LifecycleOwner {
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false,
         uniqueWith: Int = -1
-    ): Boolean? = parentLayout?.presentFragmentGroup(screen, removeLast, forceWithoutAnimation, uniqueWith)
+    ): Boolean? =
+        parentLayout?.presentFragmentGroup(screen, removeLast, forceWithoutAnimation, uniqueWith)
 
 
     fun nextFragment(

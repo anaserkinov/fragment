@@ -329,7 +329,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     fun presentFragmentAsSheet(fragment: Fragment, fullScreen: Boolean = false) {
-        parentLayout?.presentAsSheet(fragment, fullScreen)
+        parentLayout?.presentFragmentAsSheet(fragment, fullScreen)
     }
 
     fun presentFragmentAsPopup(

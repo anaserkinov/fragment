@@ -2027,7 +2027,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         return true
     }
 
-    fun presentAsSheet(screen: Fragment, fullScreen: Boolean = false) {
+    fun presentFragmentAsSheet(screen: Fragment, fullScreen: Boolean = false) {
         screen.parentLayout = this
         screen.groupId = -2
         fragmentStack.add(screen)

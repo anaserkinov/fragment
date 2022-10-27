@@ -874,7 +874,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             set(value) {
                 field = value
                 if (view is ImageView)
-                    (view as ImageView).setColorFilter(color)
+                    (view as ImageView).colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN)
                 else if (view is TextView)
                     (view as TextView).setTextColor(color)
             }
@@ -889,8 +889,10 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 imageView.setPadding(dp(12))
                 if (icon != 0)
                     imageView.setImageResource(icon)
-                imageView.colorFilter = PorterDuffColorFilter(Theme.white, PorterDuff.Mode.SRC_IN)
+                imageView.colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN)
                 imageView.background = makeCircleRippleDrawable()
+                if (flags == SEARCH)
+                    view?.isVisible = isVisible
                 view = imageView
                 imageView
             } else {
@@ -901,8 +903,15 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 textView.setPadding(dp(8))
                 if (title != 0)
                     textView.setText(title)
-                textView.setTextColor(Theme.white)
+                textView.setTextColor(
+                    if (isEnabled)
+                        color
+                    else
+                        color.alpha(70)
+                )
                 textView.background = makeRippleDrawable()
+                if (flags == SEARCH)
+                    view?.isVisible = isVisible
                 view = textView
                 textView
             }

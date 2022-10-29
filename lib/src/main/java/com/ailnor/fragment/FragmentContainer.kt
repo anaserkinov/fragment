@@ -52,6 +52,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private var beginTrackingSent = false
     private var startedTrackingPointerId = -1
     private var drawShadow = false
+    private var touchStartedOnSplitted = false
 
     companion object {
         const val FROM_RIGHT = 1
@@ -1342,8 +1343,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         beginTrackingSent = false
 
         if (Utilities.isLandscape && containerView.isSplit()) {
+            touchStartedOnSplitted = true
             containerView.prepareForMove()
         } else if (fragmentStack.size > 1) {
+            touchStartedOnSplitted = false
             containerViewBack.translationX = 0f
             containerViewBack.alpha = 1f
             containerViewBack.visibility = View.VISIBLE
@@ -1394,17 +1397,32 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private fun onSlideAnimationEnd(backAnimation: Boolean) {
         if (backAnimation) {
-            if (fragmentStack.size > 1)
+            if (fragmentStack.size > 1) {
+                val index = if (!touchStartedOnSplitted && containerView.isSplit())
+                    fragmentStack.size - 3
+                else
+                    fragmentStack.size - 2
                 pauseFragment(
-                    fragmentStack[fragmentStack.size - 2],
-                    !fragmentStack[fragmentStack.size - 1].popup
+                    fragmentStack[index],
+                    !fragmentStack[index + 1].popup
                 )
+            }
         } else {
-            val fragment = fragmentStack[fragmentStack.size - 1]
-            if (fragmentStack.size == 1 || fragment.groupId != fragmentStack[fragmentStack.size - 2].groupId)
-                currentGroupId--
+            if (!touchStartedOnSplitted && containerView.isSplit()){
+                finishFragment(fragmentStack[fragmentStack.size - 1])
 
-            finishFragment(fragment)
+                val fragment = fragmentStack[fragmentStack.size - 1]
+                if (fragmentStack.size == 1 || fragment.groupId != fragmentStack[fragmentStack.size - 2].groupId)
+                    currentGroupId--
+
+                finishFragment(fragment)
+            } else {
+                val fragment = fragmentStack[fragmentStack.size - 1]
+                if (fragmentStack.size == 1 || fragment.groupId != fragmentStack[fragmentStack.size - 2].groupId)
+                    currentGroupId--
+
+                finishFragment(fragment)
+            }
 
             val temp = containerView
             containerView = containerViewBack
@@ -1477,7 +1495,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 fragmentStack[fragmentStack.size - 1].onBeginSlide()
                                 beginTrackingSent = true
                             }
-                            if (Utilities.isLandscape && containerView.isSplit())
+                            if (Utilities.isLandscape && touchStartedOnSplitted)
                                 containerView.translateX(dx)
                             else {
                                 containerView.translationX = dx.toFloat()
@@ -1504,7 +1522,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             val velX = velocityTracker!!.xVelocity
                             val velY = velocityTracker!!.yVelocity
 
-                            if (Utilities.isLandscape && containerView.isSplit()) {
+                            if (Utilities.isLandscape && touchStartedOnSplitted) {
                                 containerView.finishTranslation(velX, velY)
                             } else {
                                 val x = containerView.x
@@ -1516,8 +1534,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                     containerView.measuredWidth - x
 
                                 if (backAnimation) {
-                                    if (fragmentStack.size > 1)
-                                        fragmentStack[fragmentStack.size - 2].onPrePause()
+                                    if (fragmentStack.size > 1) {
+                                        if (!touchStartedOnSplitted && containerView.isSplit())
+                                            fragmentStack[fragmentStack.size - 3].onPrePause()
+                                        else
+                                            fragmentStack[fragmentStack.size - 2].onPrePause()
+                                    }
                                 } else
                                     fragmentStack[fragmentStack.size - 1].onPrePause()
 
@@ -2031,7 +2053,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         screen.parentLayout = this
         screen.groupId = -2
         fragmentStack.add(screen)
-        BottomSheet(screen, fullScreen).show(parentActivity.supportFragmentManager, screen.fragmentId.toString())
+        BottomSheet(screen, fullScreen).show(
+            parentActivity.supportFragmentManager,
+            screen.fragmentId.toString()
+        )
     }
 
     fun addFragmentToStack(screen: Fragment, newGroup: Boolean = true): Boolean {

@@ -180,6 +180,10 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     }
 
+    protected open fun parseArguments(arguments: Bundle){
+
+    }
+
     open fun finishFragment(animated: Boolean) {
         if (finishing || isFinished || parentLayout == null)
             return
@@ -220,6 +224,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             }
         })
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        if (arguments != null)
+            parseArguments(arguments!!)
         return true
     }
 

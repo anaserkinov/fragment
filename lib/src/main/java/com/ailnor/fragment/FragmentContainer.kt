@@ -22,13 +22,14 @@ import androidx.core.math.MathUtils
 import androidx.core.view.children
 import com.ailnor.core.*
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import java.util.Stack
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
 class FragmentContainer(context: Context) : FrameLayout(context) {
 
-    private var frameAnimationFinishRunnable: Runnable? = null
+    private var frameAnimationFinishRunnable = Stack<Runnable>()
     private var inAnimation = false
     private var touching = false
     private var isSlideFinishing = false
@@ -490,8 +491,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                         leftFrame.updateParams(0.35f, 0f)
                                         rightFrame!!.updateParams(0.65f, 0f)
                                         requestLayout()
-                                        if (frameAnimationFinishRunnable != null)
-                                            post(frameAnimationFinishRunnable)
+                                        runStackedRunnable()
                                     }
 
                                     override fun onAnimationRepeat(animation: Animation?) {
@@ -527,8 +527,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                         requestLayout()
                                         finishFragment(fragmentStack[fragmentStack.size - 1])
                                         fragmentStack[fragmentStack.size - 1].onGetFirstInStack()
-                                        if (frameAnimationFinishRunnable != null)
-                                            post(frameAnimationFinishRunnable)
+                                        runStackedRunnable()
                                     }
 
                                     override fun onAnimationRepeat(animation: Animation?) {
@@ -583,8 +582,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                         rightFrame!!.updateParams(0.65f, 0f)
                                         requestLayout()
                                         pauseFragment(fragmentStack[fragmentStack.size - 3], true)
-                                        if (frameAnimationFinishRunnable != null)
-                                            post(frameAnimationFinishRunnable)
+                                        runStackedRunnable()
                                     }
 
                                     override fun onAnimationRepeat(animation: Animation?) {
@@ -635,8 +633,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                         finishFragment(fragmentStack[fragmentStack.size - 1])
                                         fragmentStack[fragmentStack.size - 1].onGetFirstInStack()
                                         resumeFragment(fragmentStack[fragmentStack.size - 2], false)
-                                        if (frameAnimationFinishRunnable != null)
-                                            post(frameAnimationFinishRunnable)
+                                        runStackedRunnable()
                                     }
 
                                     override fun onAnimationRepeat(animation: Animation?) {
@@ -733,8 +730,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 requestLayout()
                                 resumeFragment(newFragment!!, true)
                                 newFragment = null
-                                if (frameAnimationFinishRunnable != null)
-                                    post(frameAnimationFinishRunnable)
+                                runStackedRunnable()
                             }
 
                             override fun onAnimationRepeat(animation: Animation?) {
@@ -800,8 +796,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 oldFragment = null
                                 resumeFragment(newFragment!!, true)
                                 newFragment = null
-                                if (frameAnimationFinishRunnable != null)
-                                    post(frameAnimationFinishRunnable)
+                                runStackedRunnable()
                             }
 
                             override fun onAnimationRepeat(animation: Animation?) {
@@ -904,8 +899,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 oldFragment = null
                                 newFragment!!.onGetFirstInStack()
                                 newFragment = null
-                                if (frameAnimationFinishRunnable != null)
-                                    post(frameAnimationFinishRunnable)
+                                runStackedRunnable()
                             }
 
                             override fun onAnimationRepeat(animation: Animation?) {
@@ -963,8 +957,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 newFragment = null
                                 resumeFragment(newFragment2!!, false)
                                 newFragment2 = null
-                                if (frameAnimationFinishRunnable != null)
-                                    post(frameAnimationFinishRunnable)
+                                runStackedRunnable()
                             }
 
                             override fun onAnimationRepeat(animation: Animation?) {
@@ -1032,8 +1025,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 newFragment = null
                                 resumeFragment(newFragment2!!, false)
                                 newFragment2 = null
-                                if (frameAnimationFinishRunnable != null)
-                                    post(frameAnimationFinishRunnable)
+                                runStackedRunnable()
                             }
 
                             override fun onAnimationRepeat(animation: Animation?) {
@@ -1101,8 +1093,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 requestLayout()
                                 resumeFragment(newFragment!!, false)
                                 newFragment = null
-                                if (frameAnimationFinishRunnable != null)
-                                    post(frameAnimationFinishRunnable)
+                                runStackedRunnable()
                             }
 
                             override fun onAnimationRepeat(animation: Animation?) {
@@ -1154,8 +1145,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 requestLayout()
                                 pauseFragment(oldFragment!!, true)
                                 oldFragment = null
-                                if (frameAnimationFinishRunnable != null)
-                                    post(frameAnimationFinishRunnable)
+                                runStackedRunnable()
                             }
 
                             override fun onAnimationRepeat(animation: Animation?) {
@@ -1221,8 +1211,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 oldFragment = null
                                 resumeFragment(newFragment!!, true)
                                 newFragment = null
-                                if (frameAnimationFinishRunnable != null)
-                                    post(frameAnimationFinishRunnable)
+                                runStackedRunnable()
                             }
 
                             override fun onAnimationRepeat(animation: Animation?) {
@@ -1735,18 +1724,19 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 forceWithoutAnimation,
                 uniqueWith
             )
-        else if (frameAnimationFinishRunnable == null)
-            frameAnimationFinishRunnable = Runnable {
-                frameAnimationFinishRunnable = null
-                presentFragmentInternal(
-                    fragment,
-                    newGroup,
-                    removeLast,
-                    false,
-                    forceWithoutAnimation,
-                    uniqueWith
-                )
-            }
+        else
+            frameAnimationFinishRunnable.push(
+                Runnable {
+                    presentFragmentInternal(
+                        fragment,
+                        newGroup,
+                        removeLast,
+                        false,
+                        forceWithoutAnimation,
+                        uniqueWith
+                    )
+                }
+            )
         return false
     }
 
@@ -1764,18 +1754,19 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 true,
                 uniqueWith
             )
-        else if (frameAnimationFinishRunnable == null)
-            frameAnimationFinishRunnable = Runnable {
-                frameAnimationFinishRunnable = null
-                presentFragmentInternal(
-                    fragment,
-                    true,
-                    false,
-                    false,
-                    true,
-                    uniqueWith
-                )
-            }
+        else
+            frameAnimationFinishRunnable.push(
+                Runnable {
+                    presentFragmentInternal(
+                        fragment,
+                        true,
+                        false,
+                        false,
+                        true,
+                        uniqueWith
+                    )
+                }
+            )
         return false
     }
 
@@ -1909,8 +1900,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     if (!fragment.popup)
                         containerViewBack.visibility = GONE
                     inAnimation = false
-                    if (frameAnimationFinishRunnable != null)
-                        post(frameAnimationFinishRunnable)
+                    runStackedRunnable()
                 }
 
                 override fun onAnimationCancel(animation: Animator?) {
@@ -1947,17 +1937,17 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 forceWithoutAnimation,
                 uniqueWith
             )
-        else if (frameAnimationFinishRunnable == null)
-            frameAnimationFinishRunnable = Runnable {
-                frameAnimationFinishRunnable = null
-
-                nextFragmentInnerGroupInternal(
-                    fragment,
-                    removeLast,
-                    forceWithoutAnimation,
-                    uniqueWith
-                )
-            }
+        else
+            frameAnimationFinishRunnable.push(
+                Runnable {
+                    nextFragmentInnerGroupInternal(
+                        fragment,
+                        removeLast,
+                        forceWithoutAnimation,
+                        uniqueWith
+                    )
+                }
+            )
         return false
     }
 
@@ -1989,11 +1979,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             return presentFragment(fragment, false, removeLast, forceWithoutAnimation)
         else if (!inAnimation)
             return nextScreenInternal(fragment, removeLast, false, forceWithoutAnimation)
-        else if (frameAnimationFinishRunnable == null)
-            frameAnimationFinishRunnable = Runnable {
-                frameAnimationFinishRunnable = null
-                nextScreenInternal(fragment, removeLast, false, forceWithoutAnimation)
-            }
+        else
+            frameAnimationFinishRunnable.push(
+                Runnable {
+                    nextScreenInternal(fragment, removeLast, false, forceWithoutAnimation)
+                }
+            )
         return false
     }
 
@@ -2100,24 +2091,25 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 animated,
                 fragmentStack.indexOf(fragment) != fragmentStack.size - 1
             )
-        else if (frameAnimationFinishRunnable == null)
-            frameAnimationFinishRunnable = Runnable {
-                frameAnimationFinishRunnable = null
-                closeLastFragmentInternal(
-                    animated,
-                    fragmentStack.indexOf(fragment) != fragmentStack.size - 1
-                )
-            }
+        else frameAnimationFinishRunnable.push(
+                Runnable {
+                    closeLastFragmentInternal(
+                        animated,
+                        fragmentStack.indexOf(fragment) != fragmentStack.size - 1
+                    )
+                }
+            )
     }
 
     fun closeLastFragment(animated: Boolean = true, openPrevious: Boolean = true) {
         if (!inAnimation)
             closeLastFragmentInternal(animated, openPrevious)
-        else if (frameAnimationFinishRunnable == null)
-            frameAnimationFinishRunnable = Runnable {
-                frameAnimationFinishRunnable = null
-                closeLastFragmentInternal(animated, openPrevious)
-            }
+        else
+            frameAnimationFinishRunnable.push(
+                Runnable {
+                    closeLastFragmentInternal(animated, openPrevious)
+                }
+            )
     }
 
     // Not completed, always close last fragment in stack !!!
@@ -2127,11 +2119,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             return false
         if (!inAnimation)
             closeLastFragmentInternal(animated, fragmentIndex != fragmentStack.size - 1)
-        else if (frameAnimationFinishRunnable == null)
-            frameAnimationFinishRunnable = Runnable {
-                frameAnimationFinishRunnable = null
+        else frameAnimationFinishRunnable.push(
+            Runnable {
                 closeLastFragmentInternal(animated, fragmentIndex != fragmentStack.size - 1)
             }
+        )
         return true
     }
 
@@ -2281,8 +2273,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         if (groupRemoved && !fragmentStack.isEmpty())
                             currentGroupId = fragmentStack[fragmentStack.size - 1].groupId
                         inAnimation = false
-                        if (frameAnimationFinishRunnable != null)
-                            post(frameAnimationFinishRunnable)
+                        runStackedRunnable()
                     }
 
                     override fun onAnimationCancel(animation: Animator?) {
@@ -2366,13 +2357,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             while (fragmentStack.size != 0) {
                 removeScreenFromStack(fragmentStack.size - 1, true)
             }
-        else if (frameAnimationFinishRunnable == null)
-            frameAnimationFinishRunnable = Runnable {
-                frameAnimationFinishRunnable = null
-                while (fragmentStack.size != 0) {
-                    removeScreenFromStack(fragmentStack.size - 1, true)
+        else
+            frameAnimationFinishRunnable.push(
+                Runnable {
+                    while (fragmentStack.size != 0) {
+                        removeScreenFromStack(fragmentStack.size - 1, true)
+                    }
                 }
-            }
+            )
 
     }
 
@@ -2536,6 +2528,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             }
         }
         return null
+    }
+
+    private fun runStackedRunnable(){
+        if (frameAnimationFinishRunnable.size != 0){
+            post(frameAnimationFinishRunnable.pop())
+        }
     }
 
 

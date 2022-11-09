@@ -47,7 +47,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             )
                 viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         }
-    private var finishing = false
+    protected var isFinishing = false
     protected var hasToolbar = true
     var groupId = -1
     var innerGroupId = -1
@@ -185,16 +185,16 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     open fun finishFragment(animated: Boolean) {
-        if (finishing || isFinished || parentLayout == null)
+        if (isFinishing || isFinished || parentLayout == null)
             return
-        finishing = true
+        isFinishing = true
         parentLayout!!.closeLastFragment(this, animated)
     }
 
     open fun finishFragmentById(animated: Boolean) {
-        if (finishing || isFinished || parentLayout == null)
+        if (isFinishing || isFinished || parentLayout == null)
             return
-        finishing = true
+        isFinishing = true
         parentLayout!!.closeFragment(fragmentId, animated)
     }
 
@@ -207,10 +207,6 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             return
         }
         parentLayout!!.removeScreenFromStack(this)
-    }
-
-    protected open fun isFinishing(): Boolean {
-        return finishing
     }
 
     open fun onAttackToContext(context: Context) {}
@@ -239,7 +235,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         lifecycleRegistry = LifecycleRegistry(this)
         lifecycleCallback?.onChange(Lifecycle.Event.ON_CREATE)
         isFinished = false
-        finishing = false
+        isFinishing = false
         isStarted = false
         isPaused = true
     }

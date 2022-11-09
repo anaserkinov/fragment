@@ -2138,6 +2138,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private fun closeLastFragmentInternal(animated: Boolean, openPrevious: Boolean) {
         val _oldFragment = fragmentStack[fragmentStack.size - 1]
+        _oldFragment.isFinishing = true
 
         if (_oldFragment.groupId == -2) {
             (parentActivity.supportFragmentManager.findFragmentByTag(_oldFragment.fragmentId.toString()) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()

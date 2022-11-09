@@ -47,7 +47,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             )
                 viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         }
-    protected var isFinishing = false
+    var isFinishing = false
     protected var hasToolbar = true
     var groupId = -1
     var innerGroupId = -1

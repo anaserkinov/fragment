@@ -209,7 +209,7 @@
 //
 //    @CallSuper
 //    open fun onFragmentCreate(): Boolean {
-//        lifecycleRegistry.addObserver(object : LifecycleEventObserver {
+//        lifecycleRegistry.addObserver(object : LifecycleObserver {
 //            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
 //                if (event == Lifecycle.Event.ON_STOP)
 //                    savedView?.cancelPendingInputEvents()

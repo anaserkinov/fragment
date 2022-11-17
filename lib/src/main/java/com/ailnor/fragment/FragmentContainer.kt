@@ -446,6 +446,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         fun translateX(dx: Int) {
 
             val per = min(dx / (measuredWidth * 0.65f), 1f)
+            onAnimationProgressChanged(per, false)
 
             oldFragment?.actionBar?.drawableRotation = per
 
@@ -1489,6 +1490,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             else {
                                 containerView.translationX = dx.toFloat()
                                 innerTranslationX = dx.toFloat()
+                                onAnimationProgressChanged(min(dx/measuredWidth.toFloat(), 1f), false)
                             }
                         }
                     } else if (ev.getPointerId(0) == startedTrackingPointerId && (ev.action == MotionEvent.ACTION_UP || ev.action == MotionEvent.ACTION_CANCEL || ev.action == MotionEvent.ACTION_POINTER_UP)) {
@@ -1537,35 +1539,40 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                     50
                                 )
                                 val animatorSet = AnimatorSet()
-                                if (backAnimation)
-                                    animatorSet.playTogether(
-                                        ObjectAnimator.ofFloat(
-                                            containerView,
-                                            View.TRANSLATION_X,
-                                            0f
-                                        ).setDuration(duration),
-                                        ObjectAnimator.ofFloat(
-                                            this,
-                                            "innerTranslationX",
-                                            innerTranslationX,
-                                            0f
-                                        )
-                                            .setDuration(duration)
-                                    )
-                                else
-                                    animatorSet.playTogether(
-                                        ObjectAnimator.ofFloat(
-                                            containerView,
-                                            View.TRANSLATION_X,
-                                            containerView.measuredWidth.toFloat()
-                                        ).setDuration(duration),
-                                        ObjectAnimator.ofFloat(
-                                            this,
-                                            "innerTranslationX",
-                                            innerTranslationX,
-                                            containerView.measuredWidth.toFloat()
-                                        ).setDuration(duration)
-                                    )
+                                val innerTranslationXAnimation: ObjectAnimator
+                                val translationXAnimation: ObjectAnimator
+                                if (backAnimation) {
+                                    innerTranslationXAnimation = ObjectAnimator.ofFloat(
+                                        this,
+                                        "innerTranslationX",
+                                        innerTranslationX,
+                                        0f
+                                    ).setDuration(duration)
+                                    translationXAnimation = ObjectAnimator.ofFloat(
+                                        containerView,
+                                        View.TRANSLATION_X,
+                                        0f
+                                    ).setDuration(duration)
+                                    translationXAnimation.addUpdateListener {
+                                        onAnimationProgressChanged(1f- containerView.translationX/containerView.measuredWidth, true)
+                                    }
+                                }else {
+                                    innerTranslationXAnimation =  ObjectAnimator.ofFloat(
+                                        this,
+                                        "innerTranslationX",
+                                        innerTranslationX,
+                                        containerView.measuredWidth.toFloat()
+                                    ).setDuration(duration)
+                                    translationXAnimation = ObjectAnimator.ofFloat(
+                                        containerView,
+                                        View.TRANSLATION_X,
+                                        containerView.measuredWidth.toFloat()
+                                    ).setDuration(duration)
+                                    translationXAnimation.addUpdateListener {
+                                        onAnimationProgressChanged(containerView.translationX/containerView.measuredWidth, false)
+                                    }
+                                }
+                                animatorSet.playTogether(translationXAnimation, innerTranslationXAnimation)
                                 animatorSet.addListener(object : AnimatorListenerAdapter() {
                                     override fun onAnimationEnd(animation: Animator?) {
                                         onSlideAnimationEnd(backAnimation)
@@ -1865,6 +1872,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 containerView.measuredWidth * 0.3f,
                 0f
             )
+
+            alphaAnimation.addUpdateListener {
+                onAnimationProgressChanged(it.animatedFraction, true)
+            }
 
             fragment.onPreResume()
             if (fragmentStack.size > 1)
@@ -2257,6 +2268,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 val _newFragment = newFragment
                 val _newFragment2 = newFragment2
 
+                alphaAnimation.addUpdateListener {
+                    onAnimationProgressChanged(it.animatedFraction, false)
+                }
                 currentAnimationSet!!.addListener(object : Animator.AnimatorListener {
                     override fun onAnimationStart(animation: Animator?) {
                     }
@@ -2396,6 +2410,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     fun isAddedToStack(fragment: Fragment): Boolean = fragmentStack.contains(fragment)
 
     fun indexOf(fragment: Fragment) = fragmentStack.indexOf(fragment)
+
+    private fun onAnimationProgressChanged(progress: Float, opening: Boolean){
+        fragmentStack[fragmentStack.size - 1].onTransitionAnimationProgress(opening, progress)
+//        if (fragmentStack.size > 1)
+//            fragmentStack[fragmentStack.size - 2].onTransitionAnimationProgress(opening, progress)
+    }
 
 //    override fun onConfigurationChanged(newConfig: Configuration?) {
 //        super.onConfigurationChanged(newConfig)

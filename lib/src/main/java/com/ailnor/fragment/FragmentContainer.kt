@@ -1983,7 +1983,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     fun nextFragment(
         fragment: Fragment,
-        removeLast: Boolean,
+        removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false
     ): Boolean {
         if (!Utilities.isLandscape)

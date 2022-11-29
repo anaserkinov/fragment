@@ -50,6 +50,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private var startedTrackingY = 0
     private var startedTracking = false
     private var maybeStartedTracking = false
+//    set(value) {
+//        field = value
+//    }
     private var beginTrackingSent = false
     private var startedTrackingPointerId = -1
     private var drawShadow = false
@@ -1709,14 +1712,21 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     fun presentFragmentGroup(
         screen: Fragment,
+        parentFragmentId: Int = -1,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false,
         uniqueWith: Int = -1
-    ): Boolean = presentFragment(screen, true, removeLast, forceWithoutAnimation, uniqueWith)
-
+    ): Boolean = presentFragment(
+        screen,
+        parentFragmentId,
+        true,
+        removeLast,
+        forceWithoutAnimation,
+        uniqueWith)
 
     fun presentFragment(
         fragment: Fragment,
+        parentFragmentId: Int,
         newGroup: Boolean = false,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false,
@@ -1725,6 +1735,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (!inAnimation)
             return presentFragmentInternal(
                 fragment,
+                parentFragmentId,
                 newGroup,
                 removeLast,
                 false,
@@ -1736,6 +1747,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 Runnable {
                     presentFragmentInternal(
                         fragment,
+                        parentFragmentId,
                         newGroup,
                         removeLast,
                         false,
@@ -1749,12 +1761,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     fun presentFragmentAsPopUp(
         fragment: Fragment,
+        parentFragmentId: Int,
         uniqueWith: Int = -1
     ): Boolean {
         fragment.popup = true
         if (!inAnimation)
             return presentFragmentInternal(
                 fragment,
+                parentFragmentId,
                 true,
                 false,
                 false,
@@ -1766,6 +1780,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 Runnable {
                     presentFragmentInternal(
                         fragment,
+                        parentFragmentId,
                         true,
                         false,
                         false,
@@ -1779,12 +1794,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private fun presentFragmentInternal(
         fragment: Fragment,
+        parentFragmentId: Int,
         newGroup: Boolean,
         removeLast: Boolean,
         innerGroup: Boolean,
         forceWithoutAnimation: Boolean,
         uniqueWith: Int
     ): Boolean {
+        fragment.parentFragmentId = parentFragmentId
         if (!fragment.onFragmentCreate() || uniqueWith != -1 && fragmentStack.any { it.fragmentId == uniqueWith })
             return false
 
@@ -1933,6 +1950,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     fun nextFragmentInnerGroup(
         fragment: Fragment,
+        parentFragmentId: Int,
         forceWithoutAnimation: Boolean = false,
         uniqueWith: Int = -1
     ): Boolean {
@@ -1944,6 +1962,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (!inAnimation)
             return nextFragmentInnerGroupInternal(
                 fragment,
+                parentFragmentId,
                 removeLast,
                 forceWithoutAnimation,
                 uniqueWith
@@ -1953,6 +1972,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 Runnable {
                     nextFragmentInnerGroupInternal(
                         fragment,
+                        parentFragmentId,
                         removeLast,
                         forceWithoutAnimation,
                         uniqueWith
@@ -1964,6 +1984,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private fun nextFragmentInnerGroupInternal(
         fragment: Fragment,
+        parentFragmentId: Int,
         removeLast: Boolean,
         forceWithoutAnimation: Boolean,
         uniqueWith: Int
@@ -1971,6 +1992,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         return if (!Utilities.isLandscape)
             presentFragmentInternal(
                 fragment,
+                parentFragmentId,
                 false,
                 removeLast,
                 true,
@@ -1978,33 +2000,36 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 uniqueWith
             )
         else
-            nextScreenInternal(fragment, removeLast, true, forceWithoutAnimation)
+            nextFragmentInternal(fragment, parentFragmentId, removeLast, true, forceWithoutAnimation)
     }
 
     fun nextFragment(
         fragment: Fragment,
+        parentFragmentId: Int,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false
     ): Boolean {
         if (!Utilities.isLandscape)
-            return presentFragment(fragment, false, removeLast, forceWithoutAnimation)
+            return presentFragment(fragment, parentFragmentId, false, removeLast, forceWithoutAnimation)
         else if (!inAnimation)
-            return nextScreenInternal(fragment, removeLast, false, forceWithoutAnimation)
+            return nextFragmentInternal(fragment, parentFragmentId, removeLast, false, forceWithoutAnimation)
         else
             frameAnimationFinishRunnable.push(
                 Runnable {
-                    nextScreenInternal(fragment, removeLast, false, forceWithoutAnimation)
+                    nextFragmentInternal(fragment, parentFragmentId, removeLast, false, forceWithoutAnimation)
                 }
             )
         return false
     }
 
-    private fun nextScreenInternal(
+    private fun nextFragmentInternal(
         fragment: Fragment,
+        parentFragmentId: Int,
         removeLast: Boolean,
         innerGroup: Boolean,
         forceWithoutAnimation: Boolean
     ): Boolean {
+        fragment.parentFragmentId = parentFragmentId
         if (!fragment.onFragmentCreate()) {
             return false
         }
@@ -2051,18 +2076,20 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         return true
     }
 
-    fun presentFragmentAsSheet(screen: Fragment, fullScreen: Boolean = false) {
-        screen.parentLayout = this
-        screen.groupId = -2
-        fragmentStack.add(screen)
-        BottomSheet(screen, fullScreen).show(
+    fun presentFragmentAsSheet(fragment: Fragment, parentFragmentId: Int, fullScreen: Boolean = false) {
+        fragment.parentLayout = this
+        fragment.groupId = -2
+        fragment.parentFragmentId = parentFragmentId
+        fragmentStack.add(fragment)
+        BottomSheet(fragment, fullScreen).show(
             parentActivity.supportFragmentManager,
-            screen.fragmentId.toString()
+            fragment.fragmentId.toString()
         )
     }
 
-    fun addFragmentToStack(screen: Fragment, newGroup: Boolean = true): Boolean {
-        return addFragmentToStack(screen, newGroup, -1)
+    fun addFragmentToStack(fragment: Fragment, parentFragmentId: Int, newGroup: Boolean = true): Boolean {
+        fragment.parentFragmentId = parentFragmentId
+        return addFragmentToStack(fragment, newGroup, -1)
     }
 
     fun addFragmentToStack(screen: Fragment, newGroup: Boolean, position: Int): Boolean {
@@ -2426,12 +2453,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 //        }
 //    }
 
-    fun send(toRight: Boolean, vararg data: Any?) {
-        fragmentStack[fragmentStack.size - if (toRight) 1 else 2].onReceive(*data)
+    fun sendParent(parentFragmentId: Int, vararg data: Any?) {
+        fragmentStack.find {
+            it.fragmentId == parentFragmentId
+        }?.onReceive(*data)
     }
 
-    fun send(current: Fragment, step: Int, vararg data: Any?) {
-        fragmentStack[fragmentStack.indexOf(current) + step].onReceive(*data)
+    fun send(toRight: Boolean, vararg data: Any?) {
+        fragmentStack[fragmentStack.size - if (toRight) 1 else 2].onReceive(*data)
     }
 
 

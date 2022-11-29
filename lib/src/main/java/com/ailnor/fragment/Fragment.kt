@@ -35,7 +35,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     var lifecycleCallback: LifecycleCallback? = null
 
-    protected var arguments: Bundle? = null
+    // make protected after update bottom sheet
+    var arguments: Bundle? = null
         private set
 
     private var isFinished = false
@@ -53,6 +54,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     var innerGroupId = -1
     var fragmentId = -1
     var popup = false
+    var parentFragmentId = -1
 
     var backgroundColor = Theme.white
 
@@ -307,49 +309,52 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     open fun onRemoveFromParent() {}
 
     fun presentFragment(
-        screen: Fragment,
+        fragment: Fragment,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false,
         uniqueWith: Int = -1
-    ): Boolean? =
-        parentLayout?.presentFragmentGroup(screen, removeLast, forceWithoutAnimation, uniqueWith)
+    ): Boolean?{
+        return parentLayout?.presentFragmentGroup(fragment, fragmentId, removeLast, forceWithoutAnimation, uniqueWith)
+    }
 
 
     fun nextFragment(
-        screen: Fragment,
+        fragment: Fragment,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false
     ) {
-        parentLayout?.nextFragment(screen, removeLast, forceWithoutAnimation)
+        parentLayout?.nextFragment(fragment, fragmentId, removeLast, forceWithoutAnimation)
     }
 
     fun nextScreenInnerGroup(
-        screen: Fragment,
+        fragment: Fragment,
         forceWithoutAnimation: Boolean = false
     ) {
-        parentLayout?.nextFragmentInnerGroup(screen, forceWithoutAnimation)
+        parentLayout?.nextFragmentInnerGroup(fragment, fragmentId, forceWithoutAnimation)
     }
 
     fun presentFragmentAsSheet(fragment: Fragment, fullScreen: Boolean = false) {
-        parentLayout?.presentFragmentAsSheet(fragment, fullScreen)
+        parentLayout?.presentFragmentAsSheet(fragment, fragmentId, fullScreen)
     }
 
     fun presentFragmentAsPopup(
         fragment: Fragment,
         uniqueWith: Int = -1
-    ): Boolean? = parentLayout?.presentFragmentAsPopUp(fragment, uniqueWith)
+    ): Boolean?{
+        return parentLayout?.presentFragmentAsPopUp(fragment, uniqueWith)
+    }
 
 
     open fun onReceive(vararg data: Any?) {
 
     }
 
-    protected fun send(toRight: Boolean, vararg data: Any?) {
-        parentLayout?.send(toRight, *data)
+    protected fun sendParent(vararg data: Any?){
+        parentLayout?.sendParent(parentFragmentId, *data)
     }
 
-    protected fun send(step: Int, vararg data: Any?) {
-        parentLayout?.send(this, step, *data)
+    protected fun send(toRight: Boolean, vararg data: Any?) {
+        parentLayout?.send(toRight, *data)
     }
 
     open fun saveSelfArgs(args: Bundle?) {}

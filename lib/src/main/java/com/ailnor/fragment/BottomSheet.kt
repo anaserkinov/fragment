@@ -11,13 +11,18 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.lifecycle.Lifecycle
+import com.ailnor.core.MATCH_PARENT
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.ailnor.core.Utilities
 import com.ailnor.core.dp
 
-class BottomSheet(private val screen: Fragment? = null, private val fullScreen: Boolean) : BottomSheetDialogFragment() {
+class BottomSheet(
+    private val screen: Fragment? = null,
+    private val fullScreen: Boolean = false,
+    private val height: Int = MATCH_PARENT
+) : BottomSheetDialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = BottomSheetDialog(requireContext(), theme)
@@ -30,7 +35,7 @@ class BottomSheet(private val screen: Fragment? = null, private val fullScreen: 
                         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED
                     }
                     val layoutParams = view.layoutParams
-                    layoutParams.height = WindowManager.LayoutParams.MATCH_PARENT
+                    layoutParams.height = height
                     view.layoutParams = layoutParams
                 }
         }

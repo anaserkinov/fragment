@@ -2076,12 +2076,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         return true
     }
 
-    fun presentFragmentAsSheet(fragment: Fragment, parentFragmentId: Int, fullScreen: Boolean = false) {
+    fun presentFragmentAsSheet(fragment: Fragment, parentFragmentId: Int, fullScreen: Boolean = false, height: Int = MATCH_PARENT) {
         fragment.parentLayout = this
         fragment.groupId = -2
         fragment.parentFragmentId = parentFragmentId
         fragmentStack.add(fragment)
-        BottomSheet(fragment, fullScreen).show(
+        BottomSheet(fragment, fullScreen, height).show(
             parentActivity.supportFragmentManager,
             fragment.fragmentId.toString()
         )
@@ -2453,9 +2453,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 //        }
 //    }
 
-    fun sendParent(parentFragmentId: Int, vararg data: Any?) {
+    fun send(fragmentId: Int, vararg data: Any?) {
         fragmentStack.find {
-            it.fragmentId == parentFragmentId
+            it.fragmentId == fragmentId
         }?.onReceive(*data)
     }
 

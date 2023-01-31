@@ -62,6 +62,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         get() = parentLayout!!.indexOf(this)
 
     fun fragmentsCount() = parentLayout!!.fragmentsCount
+    fun fragmentsCountInAnimation() = parentLayout!!.fragmentCountInAnimation
 
     val context: Context
         get() = parentLayout!!.context

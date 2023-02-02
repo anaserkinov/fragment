@@ -30,7 +30,7 @@ import kotlin.math.min
 class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private var frameAnimationFinishRunnable = Stack<Runnable>()
-    private var inAnimation = false
+    var inAnimation = false
     private var touching = false
     private var isSlideFinishing = false
     private var isKeyboardVisible = false
@@ -48,7 +48,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private var velocityTracker: VelocityTracker? = null
     private var startedTrackingX = 0
     private var startedTrackingY = 0
-    private var startedTracking = false
+    var startedTracking = false
     private var maybeStartedTracking = false
     private var beginTrackingSent = false
     private var startedTrackingPointerId = -1

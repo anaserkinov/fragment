@@ -4,7 +4,9 @@
 
 package com.ailnor.fragment
 
+import android.app.Dialog
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -79,7 +81,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
                         try {
                             onRemoveFromParent()
                             parent.removeViewInLayout(savedView)
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
 
                         }
                     }
@@ -94,7 +96,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
                         if (parent != null) {
                             try {
                                 parent.removeViewInLayout(actionBar)
-                            } catch (e: java.lang.Exception) {
+                            } catch (_: java.lang.Exception) {
                             }
                         }
                     }
@@ -152,6 +154,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     val requiredActionBar: ActionBar
         get() = actionBar!!
 
+    var visibleDialog: Dialog? = null
     protected var inTransitionAnimation = false
     protected var fragmentBeginToShow = false
 
@@ -257,7 +260,9 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     open fun onStart() {}
 
     open fun onResume() {}
-    open fun onPause() {}
+    open fun onPause() {
+
+    }
 
     open fun onPreResume() {}
     open fun onPrePause() {}
@@ -279,6 +284,14 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         onPause()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        try {
+            if (visibleDialog != null && visibleDialog!!.isShowing && dismissDialogOnPause(visibleDialog!!)) {
+                visibleDialog!!.dismiss()
+                visibleDialog = null
+            }
+        } catch (_: Exception) {
+
+        }
         isPaused = true
     }
 
@@ -289,7 +302,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
                 try {
                     onRemoveFromParent()
                     parent.removeViewInLayout(savedView)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                 }
             }
             savedView = null
@@ -299,7 +312,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             if (parent != null) {
                 try {
                     parent.removeViewInLayout(actionBar)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                 }
             }
             actionBar = null
@@ -376,11 +389,36 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         } else null
     }
 
+    open fun dismissCurrentDialog() {
+        if (visibleDialog == null) {
+            return
+        }
+        try {
+            visibleDialog!!.dismiss()
+            visibleDialog = null
+        } catch (_: java.lang.Exception) {
+
+        }
+    }
+
+    open fun dismissDialogOnPause(dialog: Dialog): Boolean {
+        return true
+    }
+
     open fun canBeginSlide(): Boolean {
         return true
     }
 
-    open fun onBeginSlide() {}
+    open fun onBeginSlide() {
+        try {
+            if (visibleDialog != null && visibleDialog!!.isShowing) {
+                visibleDialog!!.dismiss()
+                visibleDialog = null
+            }
+        } catch (_: Exception) {
+
+        }
+    }
 
     open fun isSwipeBackEnabled(ev: MotionEvent): Boolean {
         return true
@@ -400,6 +438,41 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     open fun onTransitionAnimationEnd(isOpen: Boolean, backward: Boolean) {
         inTransitionAnimation = false
     }
+
+    open fun showDialog(
+        dialog: Dialog?,
+        allowInTransition: Boolean = false,
+        onDismissListener: DialogInterface.OnDismissListener? = null
+    ): Dialog? {
+        if (dialog == null || parentLayout == null  || parentLayout!!.startedTracking || !allowInTransition && parentLayout!!.inAnimation) {
+            return null
+        }
+        try {
+            if (visibleDialog != null) {
+                visibleDialog!!.dismiss()
+                visibleDialog = null
+            }
+        } catch (_: Exception) {
+
+        }
+        try {
+            visibleDialog = dialog
+            visibleDialog!!.setCanceledOnTouchOutside(true)
+            visibleDialog!!.setOnDismissListener { dialog1: DialogInterface ->
+                onDismissListener?.onDismiss(dialog1)
+                onDialogDismiss(dialog1 as Dialog)
+                if (dialog1 === visibleDialog) {
+                    visibleDialog = null
+                }
+            }
+            visibleDialog!!.show()
+            return visibleDialog
+        } catch (_: Exception) {
+        }
+        return null
+    }
+
+    protected open fun onDialogDismiss(dialog: Dialog?) {}
 
 
     open fun onCreateOptionsMenu() {}

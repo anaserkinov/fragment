@@ -56,6 +56,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     var innerGroupId = -1
     var fragmentId = -1
     var popup = false
+    var dialog = false
     var parentFragmentId = -1
 
     var backgroundColor = Theme.white
@@ -128,7 +129,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     val fragmentView: View
         get() = savedView!!
     protected var isStarted = false
-    protected var isPaused = true
+    public var isPaused = true
         set(value) {
             field = value
             if (isPaused) {
@@ -154,7 +155,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     val requiredActionBar: ActionBar
         get() = actionBar!!
 
-    var visibleDialog: Dialog? = null
+    var visibleDialog: DialogFragment? = null
     protected var inTransitionAnimation = false
     protected var fragmentBeginToShow = false
 
@@ -285,8 +286,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         try {
-            if (visibleDialog != null && visibleDialog!!.isShowing && dismissDialogOnPause(visibleDialog!!)) {
-                visibleDialog!!.dismiss()
+            if (visibleDialog != null && !visibleDialog!!.isPaused && dismissDialogOnPause(visibleDialog!!)) {
+                visibleDialog!!.finishFragment(false)
                 visibleDialog = null
             }
         } catch (_: Exception) {
@@ -394,14 +395,14 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             return
         }
         try {
-            visibleDialog!!.dismiss()
+            visibleDialog!!.finishFragment(false)
             visibleDialog = null
         } catch (_: java.lang.Exception) {
 
         }
     }
 
-    open fun dismissDialogOnPause(dialog: Dialog): Boolean {
+    open fun dismissDialogOnPause(dialog: DialogFragment): Boolean {
         return true
     }
 
@@ -411,8 +412,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     open fun onBeginSlide() {
         try {
-            if (visibleDialog != null && visibleDialog!!.isShowing) {
-                visibleDialog!!.dismiss()
+            if (visibleDialog != null && !visibleDialog!!.isPaused) {
+                visibleDialog!!.finishFragment(false)
                 visibleDialog = null
             }
         } catch (_: Exception) {
@@ -440,16 +441,15 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     open fun showDialog(
-        dialog: Dialog?,
-        allowInTransition: Boolean = false,
-        onDismissListener: DialogInterface.OnDismissListener? = null
-    ): Dialog? {
+        dialog: DialogFragment?,
+        allowInTransition: Boolean = false
+    ): DialogFragment? {
         if (dialog == null || parentLayout == null  || parentLayout!!.startedTracking || !allowInTransition && parentLayout!!.inAnimation) {
             return null
         }
         try {
             if (visibleDialog != null) {
-                visibleDialog!!.dismiss()
+                visibleDialog!!.finishFragment(false)
                 visibleDialog = null
             }
         } catch (_: Exception) {
@@ -457,22 +457,12 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         }
         try {
             visibleDialog = dialog
-            visibleDialog!!.setCanceledOnTouchOutside(true)
-            visibleDialog!!.setOnDismissListener { dialog1: DialogInterface ->
-                onDismissListener?.onDismiss(dialog1)
-                onDialogDismiss(dialog1 as Dialog)
-                if (dialog1 === visibleDialog) {
-                    visibleDialog = null
-                }
-            }
-            visibleDialog!!.show()
+            presentFragmentAsPopup(visibleDialog!!)
             return visibleDialog
         } catch (_: Exception) {
         }
         return null
     }
-
-    protected open fun onDialogDismiss(dialog: Dialog?) {}
 
 
     open fun onCreateOptionsMenu() {}

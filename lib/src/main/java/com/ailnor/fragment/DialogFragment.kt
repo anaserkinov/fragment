@@ -5,8 +5,6 @@
 package com.ailnor.fragment
 
 import android.content.Context
-import android.graphics.Typeface
-import android.os.Build
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
@@ -28,7 +26,7 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
 
     override fun onFragmentCreate(): Boolean {
         hasToolbar = false
-        dialog = true
+        isDialog = true
         backgroundColor = Theme.transparent
         return super.onFragmentCreate()
     }

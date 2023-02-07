@@ -4,9 +4,7 @@
 
 package com.ailnor.fragment
 
-import android.app.Dialog
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -55,8 +53,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     var groupId = -1
     var innerGroupId = -1
     var fragmentId = -1
-    var popup = false
-    var dialog = false
+    var isPopup = false
+    var isDialog = false
     var parentFragmentId = -1
 
     var backgroundColor = Theme.white
@@ -129,14 +127,16 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     val fragmentView: View
         get() = savedView!!
     protected var isStarted = false
-    public var isPaused = true
+    var isPaused = true
         set(value) {
             field = value
             if (isPaused) {
                 if (savedView != null) {
-                    viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-                    viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
-                    viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+                    if (viewLifecycleRegistry.currentState != Lifecycle.State.DESTROYED) {
+                        viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+                        viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+                        viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+                    }
                 }
             } else if (savedView != null) {
                 if (viewLifecycleRegistry.currentState == Lifecycle.State.DESTROYED) {
@@ -155,7 +155,6 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     val requiredActionBar: ActionBar
         get() = actionBar!!
 
-    var visibleDialog: DialogFragment? = null
     protected var inTransitionAnimation = false
     protected var fragmentBeginToShow = false
 
@@ -285,14 +284,6 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         onPause()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
-        try {
-            if (visibleDialog != null && !visibleDialog!!.isPaused && dismissDialogOnPause(visibleDialog!!)) {
-                visibleDialog!!.finishFragment(false)
-                visibleDialog = null
-            }
-        } catch (_: Exception) {
-
-        }
         isPaused = true
     }
 
@@ -390,18 +381,6 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         } else null
     }
 
-    open fun dismissCurrentDialog() {
-        if (visibleDialog == null) {
-            return
-        }
-        try {
-            visibleDialog!!.finishFragment(false)
-            visibleDialog = null
-        } catch (_: java.lang.Exception) {
-
-        }
-    }
-
     open fun dismissDialogOnPause(dialog: DialogFragment): Boolean {
         return true
     }
@@ -411,14 +390,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     open fun onBeginSlide() {
-        try {
-            if (visibleDialog != null && !visibleDialog!!.isPaused) {
-                visibleDialog!!.finishFragment(false)
-                visibleDialog = null
-            }
-        } catch (_: Exception) {
 
-        }
     }
 
     open fun isSwipeBackEnabled(ev: MotionEvent): Boolean {
@@ -438,30 +410,6 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     open fun onTransitionAnimationEnd(isOpen: Boolean, backward: Boolean) {
         inTransitionAnimation = false
-    }
-
-    open fun showDialog(
-        dialog: DialogFragment?,
-        allowInTransition: Boolean = false
-    ): DialogFragment? {
-        if (dialog == null || parentLayout == null  || parentLayout!!.startedTracking || !allowInTransition && parentLayout!!.inAnimation) {
-            return null
-        }
-        try {
-            if (visibleDialog != null) {
-                visibleDialog!!.finishFragment(false)
-                visibleDialog = null
-            }
-        } catch (_: Exception) {
-
-        }
-        try {
-            visibleDialog = dialog
-            presentFragmentAsPopup(visibleDialog!!)
-            return visibleDialog
-        } catch (_: Exception) {
-        }
-        return null
     }
 
 

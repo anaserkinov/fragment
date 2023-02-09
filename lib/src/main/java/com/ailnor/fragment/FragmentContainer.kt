@@ -1760,14 +1760,16 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         parentFragmentId: Int = -1,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false,
-        uniqueWith: Int = -1
-    ): Boolean = presentFragment(
+        uniqueWith: Int = -1,
+        synchronized: Boolean = true
+    ) = presentFragment(
         screen,
         parentFragmentId,
         true,
         removeLast,
         forceWithoutAnimation,
-        uniqueWith
+        uniqueWith,
+        synchronized
     )
 
     fun presentFragment(
@@ -1776,9 +1778,23 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         newGroup: Boolean = false,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false,
-        uniqueWith: Int = -1
-    ): Boolean {
-        stackRunnable {
+        uniqueWith: Int = -1,
+        synchronized: Boolean = true
+    ) {
+        if (synchronized){
+            stackRunnable {
+                presentFragmentInternal(
+                    fragment,
+                    parentFragmentId,
+                    newGroup,
+                    removeLast,
+                    false,
+                    forceWithoutAnimation,
+                    uniqueWith
+                )
+            }
+            runStackedRunnable()
+        } else
             presentFragmentInternal(
                 fragment,
                 parentFragmentId,
@@ -1788,9 +1804,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 forceWithoutAnimation,
                 uniqueWith
             )
-        }
-        runStackedRunnable()
-        return false
     }
 
     fun presentFragmentAsPopUp(
@@ -2251,8 +2264,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             removingFragment++
                             finishFragment(oldFragment!!)
                         }
-                        newFragment!!.onPreResume()
-                        resumeFragment(newFragment!!, true)
                     } else
                         containerView.previousScreen(null, null, !animated)
                     return
@@ -2291,9 +2302,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             }
 
             if (newFragment != null) {
-                if (_oldFragment.isDialog)
-                    newFragment!!.onPreResume()
-                else {
+                if (!_oldFragment.isDialog) {
 
                     var rightView: View? = newFragment!!.savedView
 
@@ -2308,13 +2317,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     else
                         rightActionBar = null
 
+                    newFragment!!.onPreResume()
+
                     if (leftView == null) {
                         containerView.addGroup(
                             rightView,
                             rightActionBar,
                             newFragment!!.backgroundColor
                         )
-                        newFragment!!.onPreResume()
                     } else {
                         containerView.addGroup(
                             leftView,
@@ -2361,11 +2371,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     override fun onAnimationEnd(animation: Animator?) {
                         containerViewBack.visibility = View.GONE
                         bringChildToFront(containerView)
-                        if (leftView == null) {
-                            if (_newFragment != null)
-                                resumeFragment(_newFragment, true)
-                        } else
+                        if (_newFragment != null)
+                            resumeFragment(_newFragment, true)
+                        if (leftView != null) {
                             resumeFragment(_newFragment2!!, false)
+                        }
                         finishFragment(_oldFragment)
                         if (groupRemoved && !fragmentStack.isEmpty())
                             currentGroupId = fragmentStack[fragmentStack.size - 1].groupId
@@ -2392,11 +2402,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         currentGroupId = fragmentStack[fragmentStack.size - 1].groupId
                     containerViewBack.visibility = View.GONE
                     bringChildToFront(containerView)
-                    if (leftView == null) {
+                    if (!_oldFragment.isDialog)
                         resumeFragment(newFragment!!, true)
-                        newFragment = null
-                    } else {
-                        resumeFragment(newFragment2!!, false)
+                    newFragment = null
+                    if (leftView != null) {
+                        if (!_oldFragment.isDialog)
+                            resumeFragment(newFragment2!!, false)
                         newFragment2 = null
                     }
                 }
@@ -2451,14 +2462,21 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
 
-    fun removeAllFragments() {
-        stackRunnable {
+    fun removeAllFragments(synchronized: Boolean = true) {
+        if (synchronized) {
+            stackRunnable {
+                removingFragment = 0
+                while (fragmentStack.size != 0) {
+                    removeScreenFromStack(fragmentStack.size - 1, true)
+                }
+            }
+            runStackedRunnable()
+        } else{
             removingFragment = 0
             while (fragmentStack.size != 0) {
                 removeScreenFromStack(fragmentStack.size - 1, true)
             }
         }
-        runStackedRunnable()
     }
 
     private fun removeScreenFromStack(index: Int, updateGroupId: Boolean) {

@@ -319,8 +319,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false,
         uniqueWith: Int = -1
-    ): Boolean?{
-        return parentLayout?.presentFragmentGroup(fragment, fragmentId, removeLast, forceWithoutAnimation, uniqueWith)
+    ){
+        parentLayout?.presentFragmentGroup(fragment, fragmentId, removeLast, forceWithoutAnimation, uniqueWith)
     }
 
 
@@ -349,7 +349,6 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     ): Boolean?{
         return parentLayout?.presentFragmentAsPopUp(fragment, uniqueWith)
     }
-
 
     open fun onReceive(vararg data: Any?) {
 

@@ -20,7 +20,7 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
 
     protected lateinit var dialogView: FrameLayout
     protected lateinit var linearLayout: LinearLayout
-    private lateinit var buttonsLayout: LinearLayout
+    private var buttonsLayout: LinearLayout? = null
 
     var touchableOutside = true
 
@@ -32,28 +32,31 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
     }
 
     override fun onCreateView(context: Context): View {
-        linearLayout = object: LinearLayout(context){
+        linearLayout = object : LinearLayout(context) {
             override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-                val height = MeasureSpec.getSize(heightMeasureSpec) - dp(16)
+                var usedHeight = 0
                 val width = MeasureSpec.getSize(widthMeasureSpec)
-                buttonsLayout.measure(
-                    measureSpec_exactly(width),
-                    measureSpec_unspecified
-                )
+                if (buttonsLayout != null) {
+                    buttonsLayout!!.measure(
+                        measureSpec_exactly(width),
+                        measureSpec_unspecified
+                    )
+                    usedHeight += buttonsLayout!!.measuredHeight
+                }
                 getChildAt(0).measure(
                     measureSpec_exactly(width),
                     measureSpec_at_most(
-                        height - buttonsLayout.measuredHeight
+                        MeasureSpec.getSize(heightMeasureSpec) - dp(16) - usedHeight
                     )
                 )
 
                 setMeasuredDimension(
                     width,
-                    buttonsLayout.measuredHeight + getChildAt(0).measuredHeight
+                    usedHeight + getChildAt(0).measuredHeight
                 )
             }
         }
-        linearLayout.setOnClickListener {  }
+        linearLayout.setOnClickListener { }
         linearLayout.orientation = LinearLayout.VERTICAL
         linearLayout.background = createRoundRectDrawable(
             dp(16f),
@@ -66,7 +69,7 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
         dialogView.fitsSystemWindows = true
         dialogView.setBackgroundColor(Theme.black.alpha(25))
         dialogView.setOnClickListener {
-            if (touchableOutside)
+            if (touchableOutside && !onBackPressed())
                 finishFragment(false)
         }
 
@@ -74,7 +77,7 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
             linearLayout,
             if (Utilities.isLandscape)
                 frameLayoutParams(
-                    Utilities.displaySize.y/2,
+                    Utilities.displaySize.y / 2,
                     WRAP_CONTENT
                 )
             else
@@ -108,12 +111,12 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
 
 
     private fun createButtonsLayout() {
-        if (::buttonsLayout.isInitialized)
+        if (buttonsLayout != null)
             return
         buttonsLayout = LinearLayout(context)
-        buttonsLayout.setPadding(dp(16), dp(8), dp(16), dp(8))
-        buttonsLayout.gravity = Gravity.END or Gravity.CENTER_VERTICAL
-        buttonsLayout.setBackgroundColor(Theme.colorPrimary.alpha(15))
+        buttonsLayout!!.setPadding(dp(16), dp(8), dp(16), dp(8))
+        buttonsLayout!!.gravity = Gravity.END or Gravity.CENTER_VERTICAL
+        buttonsLayout!!.setBackgroundColor(Theme.colorPrimary.alpha(15))
         linearLayout.addView(buttonsLayout, linearLayoutParams(MATCH_PARENT))
     }
 
@@ -131,7 +134,7 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
         )
         textView.setPadding(dp(12))
 
-        buttonsLayout.addView(textView, linearLayoutParams())
+        buttonsLayout!!.addView(textView, linearLayoutParams())
 
         return textView
     }
@@ -150,7 +153,7 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
         )
         textView.setPadding(dp(12))
 
-        buttonsLayout.addView(textView, linearLayoutParams())
+        buttonsLayout!!.addView(textView, linearLayoutParams())
 
         return textView
     }

@@ -2684,4 +2684,5 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         removingFragment++
     }
 
+
 }

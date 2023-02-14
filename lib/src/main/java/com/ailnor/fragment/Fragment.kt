@@ -12,6 +12,7 @@ import android.os.Bundle
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.annotation.CallSuper
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
@@ -310,6 +311,14 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             actionBar = null
         }
         parentLayout = null
+    }
+
+    open fun getLayoutContainer(): FrameLayout? {
+        val parent = fragmentView.parent
+        if (parent is FrameLayout) {
+            return parent
+        }
+        return null
     }
 
     open fun onRemoveFromParent() {}

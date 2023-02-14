@@ -56,6 +56,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private var startedTrackingPointerId = -1
     private var drawShadow = false
     private var touchStartedOnSplitted = false
+    private var cancelSlide = false
 
     companion object {
         const val FROM_RIGHT = 1
@@ -1474,13 +1475,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     startedTracking = false
                     beginTrackingSent = false
                     maybeStartedTracking = false
+                    cancelSlide = false
                     if (velocityTracker != null) {
                         velocityTracker!!.recycle()
                         velocityTracker = null
                     }
                     return false
                 } else {
-                    if (ev.action == MotionEvent.ACTION_DOWN) {
+                    if (ev.action == MotionEvent.ACTION_DOWN && !cancelSlide) {
                         maybeStartedTracking = true
                         beginTrackingSent = false
                         startedTrackingPointerId = ev.getPointerId(0)
@@ -1491,7 +1493,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         else
                             velocityTracker!!.clear()
                         velocityTracker!!.addMovement(ev)
-                    } else if (ev.action == MotionEvent.ACTION_MOVE && ev.getPointerId(0) == startedTrackingPointerId) {
+                    } else if (ev.action == MotionEvent.ACTION_MOVE && !cancelSlide && ev.getPointerId(0) == startedTrackingPointerId) {
                         if (velocityTracker == null)
                             velocityTracker = VelocityTracker.obtain()
                         val dx = max(0, (ev.x - startedTrackingX).toInt())
@@ -1530,7 +1532,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 )
                             }
                         }
-                    } else if (ev.getPointerId(0) == startedTrackingPointerId && (ev.action == MotionEvent.ACTION_UP || ev.action == MotionEvent.ACTION_CANCEL || ev.action == MotionEvent.ACTION_POINTER_UP)) {
+                    } else if (cancelSlide || ev.getPointerId(0) == startedTrackingPointerId && (ev.action == MotionEvent.ACTION_UP || ev.action == MotionEvent.ACTION_CANCEL || ev.action == MotionEvent.ACTION_POINTER_UP)) {
+                        cancelSlide = false
                         if (velocityTracker == null)
                             velocityTracker = VelocityTracker.obtain()
                         velocityTracker!!.computeCurrentVelocity(1000)
@@ -1781,6 +1784,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         uniqueWith: Int = -1,
         synchronized: Boolean = true
     ) {
+        cancelSlide = true
         if (synchronized){
             stackRunnable {
                 presentFragmentInternal(
@@ -1812,6 +1816,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         uniqueWith: Int = -1
     ): Boolean {
         fragment.isPopup = true
+        cancelSlide = true
         stackRunnable {
             presentFragmentInternal(
                 fragment,
@@ -2005,6 +2010,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             fragmentStack[fragmentStack.size - 1].innerGroupId == currentGroupId + 1
         } else
             false
+        cancelSlide = true
         stackRunnable {
             nextFragmentInnerGroupInternal(
                 fragment,
@@ -2051,6 +2057,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false
     ): Boolean {
+        cancelSlide = true
         stackRunnable {
             if (!Utilities.isLandscape)
                 presentFragment(
@@ -2184,6 +2191,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     fun closeLastFragment(fragment: Fragment, animated: Boolean = true) {
+        cancelSlide = true
         stackRunnable {
             closeLastFragmentInternal(
                 animated,
@@ -2194,6 +2202,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     fun closeLastFragment(animated: Boolean = true, openPrevious: Boolean = true) {
+        cancelSlide  =true
         stackRunnable {
             closeLastFragmentInternal(animated, openPrevious)
         }
@@ -2205,6 +2214,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         val fragmentIndex = fragmentStack.indexOfFirst { it.fragmentId == fragmentId }
         if (fragmentIndex == -1)
             return false
+        cancelSlide = true
         stackRunnable {
             closeLastFragmentInternal(animated, fragmentIndex != fragmentStack.size - 1)
         }
@@ -2463,6 +2473,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
 
     fun removeAllFragments(synchronized: Boolean = true) {
+        cancelSlide = true
         if (synchronized) {
             stackRunnable {
                 removingFragment = 0
@@ -2654,7 +2665,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     private fun runStackedRunnable() {
-        if (!inAnimation && frameAnimationFinishRunnable.size != 0) {
+        if (!inAnimation && !startedTracking && frameAnimationFinishRunnable.size != 0) {
             removeCallbacks(checkRunnable)
             post(checkRunnable)
         }
@@ -2662,7 +2673,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     private val checkRunnable = object : Runnable {
         override fun run() {
-            if (!inAnimation && frameAnimationFinishRunnable.size != 0) {
+            if (!inAnimation && !startedTracking && frameAnimationFinishRunnable.size != 0) {
                 post(frameAnimationFinishRunnable.removeFirst())
                 post(this)
             }

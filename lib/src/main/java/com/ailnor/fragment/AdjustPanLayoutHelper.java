@@ -1,0 +1,440 @@
+package com.ailnor.fragment;
+
+import static com.ailnor.core.UtilsKt.dp;
+
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
+import android.app.Activity;
+import android.content.Context;
+import android.os.Build;
+import android.os.SystemClock;
+import android.view.ContextThemeWrapper;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewParent;
+import android.view.ViewTreeObserver;
+import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsAnimation;
+import android.view.animation.Interpolator;
+import android.widget.FrameLayout;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.view.WindowInsetsCompat;
+
+import com.ailnor.core.CubicBezierInterpolator;
+import com.ailnor.core.Utilities;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class AdjustPanLayoutHelper {
+
+    public static final Interpolator DEFAULT_INTERPOLATOR = new CubicBezierInterpolator(0.19919472913616398, 0.010644531250000006, 0.27920937042459737, 0.91025390625);
+
+    public static boolean USE_ANDROID11_INSET_ANIMATOR = false;
+
+    public final static Interpolator keyboardInterpolator = DEFAULT_INTERPOLATOR;
+    public final static long keyboardDuration = 250;
+
+    private final View parent;
+    private View resizableViewToSet;
+
+    private ViewGroup contentView;
+    private View resizableView;
+    private boolean usingInsetAnimator = false;
+    private boolean animationInProgress;
+    private boolean needDelay;
+    private Runnable delayedAnimationRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (animator != null && !animator.isRunning()) {
+                animator.start();
+            }
+        }
+    };
+
+    public View getAdjustingParent() {
+        return parent;
+    }
+
+    public View getAdjustingContentView() {
+        return contentView;
+    }
+
+    int previousHeight = -1;
+    int previousContentHeight = -1;
+    int previousStartOffset = -1;
+
+    View parentForListener;
+    ValueAnimator animator;
+
+    int notificationsIndex;
+
+    ArrayList<View> viewsToHeightSet = new ArrayList<>();
+    protected float keyboardSize;
+
+    boolean checkHierarchyHeight;
+
+    float from, to;
+    boolean inverse;
+    boolean isKeyboardVisible;
+    long startAfter;
+
+    ViewTreeObserver.OnPreDrawListener onPreDrawListener = new ViewTreeObserver.OnPreDrawListener() {
+        @Override
+        public boolean onPreDraw() {
+            if (!Utilities.INSTANCE.getSmoothKeyboard()) {
+                onDetach();
+                return true;
+            }
+            int contentHeight = parent.getHeight();
+            if (contentHeight - startOffset() == previousHeight - previousStartOffset || contentHeight == previousHeight || animator != null) {
+                if (animator == null) {
+                    previousHeight = contentHeight;
+                    previousContentHeight = contentView.getHeight();
+                    previousStartOffset = startOffset();
+                    usingInsetAnimator = false;
+                }
+                return true;
+            }
+
+            if (!heightAnimationEnabled() || Math.abs(previousHeight - contentHeight) < dp(20)) {
+                previousHeight = contentHeight;
+                previousContentHeight = contentView.getHeight();
+                previousStartOffset = startOffset();
+                usingInsetAnimator = false;
+                return true;
+            }
+
+            if (previousHeight != -1 && previousContentHeight == contentView.getHeight()) {
+                isKeyboardVisible = contentHeight < contentView.getBottom();
+                animateHeight(previousHeight, contentHeight, isKeyboardVisible);
+                previousHeight = contentHeight;
+                previousContentHeight = contentView.getHeight();
+                previousStartOffset = startOffset();
+                return false;
+            }
+
+            previousHeight = contentHeight;
+            previousContentHeight = contentView.getHeight();
+            previousStartOffset = startOffset();
+            return false;
+        }
+    };
+
+    private void animateHeight(int previousHeight, int contentHeight, boolean isKeyboardVisible) {
+        if (ignoreOnce) {
+            ignoreOnce = false;
+            return;
+        }
+        if (!enabled) {
+            return;
+        }
+        startTransition(previousHeight, contentHeight, isKeyboardVisible);
+        animator.addUpdateListener(animation -> {
+            if (!usingInsetAnimator) {
+                updateTransition((float) animation.getAnimatedValue());
+            }
+        });
+//        int selectedAccount = UserConfig.selectedAccount;
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (!usingInsetAnimator) {
+                    stopTransition();
+                }
+            }
+        });
+        animator.setDuration(keyboardDuration);
+        animator.setInterpolator(keyboardInterpolator);
+
+//        notificationsIndex = NotificationCenter.getInstance(selectedAccount).setAnimationInProgress(notificationsIndex, null);
+        if (needDelay) {
+            needDelay = false;
+            startAfter = SystemClock.elapsedRealtime() + 100;
+            Utilities.INSTANCE.runOnUIThread(delayedAnimationRunnable, 100);
+        } else {
+            animator.start();
+            startAfter = -1;
+        }
+    }
+
+    public void startTransition(int previousHeight, int contentHeight, boolean isKeyboardVisible) {
+        if (animator != null) {
+            animator.cancel();
+        }
+
+        int startOffset = startOffset();
+        getViewsToSetHeight(parent);
+        int additionalContentHeight = 0;
+        if (checkHierarchyHeight) {
+            ViewParent viewParent = parent.getParent();
+            if (viewParent instanceof View) {
+                additionalContentHeight = ((View) viewParent).getHeight() - contentHeight;
+            }
+        }
+        setViewHeight(Math.max(previousHeight, contentHeight + additionalContentHeight));
+        resizableView.requestLayout();
+
+        onTransitionStart(isKeyboardVisible, contentHeight);
+
+        float dy = contentHeight - previousHeight;
+        keyboardSize = Math.abs(dy);
+
+        animationInProgress = true;
+        if (contentHeight > previousHeight) {
+            dy -= startOffset;
+            parent.setTranslationY(-dy);
+            onPanTranslationUpdate(dy, 1f, isKeyboardVisible);
+            from = -dy;
+            to = 0;
+            inverse = true;
+        } else {
+            parent.setTranslationY(previousStartOffset);
+            onPanTranslationUpdate(-previousStartOffset, 0f, isKeyboardVisible);
+            to = -previousStartOffset;
+            from = dy;
+            inverse = false;
+        }
+        animator = ValueAnimator.ofFloat(0, 1);
+        usingInsetAnimator = false;
+    }
+
+    public void updateTransition(float t) {
+        if (inverse) {
+            t = 1f - t;
+        }
+        float y = (int) (from * t + to * (1f - t));
+        parent.setTranslationY(y);
+        onPanTranslationUpdate(-y, t, isKeyboardVisible);
+    }
+
+    public void stopTransition() {
+        if (animator != null) {
+            animator.cancel();
+        }
+        animationInProgress = false;
+        usingInsetAnimator = false;
+//        NotificationCenter.getInstance(UserConfig.selectedAccount).onAnimationFinish(notificationsIndex);
+        animator = null;
+        setViewHeight(ViewGroup.LayoutParams.MATCH_PARENT);
+        viewsToHeightSet.clear();
+        resizableView.requestLayout();
+            onPanTranslationUpdate(0, isKeyboardVisible ? 1f : 0f, isKeyboardVisible);
+        parent.setTranslationY(0);
+        onTransitionEnd();
+    }
+    public void stopTransition(float t, boolean isKeyboardVisible) {
+        if (animator != null) {
+            animator.cancel();
+        }
+        animationInProgress = false;
+//        NotificationCenter.getInstance(UserConfig.selectedAccount).onAnimationFinish(notificationsIndex);
+        animator = null;
+        setViewHeight(ViewGroup.LayoutParams.MATCH_PARENT);
+        viewsToHeightSet.clear();
+        resizableView.requestLayout();
+        onPanTranslationUpdate(0, t, this.isKeyboardVisible = isKeyboardVisible);
+        parent.setTranslationY(0);
+        onTransitionEnd();
+    }
+
+    public void setViewHeight(int height) {
+        for (int i = 0; i < viewsToHeightSet.size(); i++) {
+            viewsToHeightSet.get(i).getLayoutParams().height = height;
+            viewsToHeightSet.get(i).requestLayout();
+        }
+    }
+
+    protected int startOffset() {
+        return 0;
+    }
+
+    public void getViewsToSetHeight(View parent) {
+        viewsToHeightSet.clear();
+        View v = parent;
+        while (v != null) {
+            viewsToHeightSet.add(v);
+            if (v == resizableView) {
+                return;
+            }
+            if (v.getParent() instanceof View) {
+                v = (View) v.getParent();
+            } else {
+                v = null;
+            }
+        }
+    }
+
+    public AdjustPanLayoutHelper(View parent) {
+        this.parent = parent;
+        onAttach();
+    }
+
+    public AdjustPanLayoutHelper(View parent, boolean useInsetsAnimator) {
+        USE_ANDROID11_INSET_ANIMATOR = USE_ANDROID11_INSET_ANIMATOR && useInsetsAnimator;
+        this.parent = parent;
+        onAttach();
+    }
+
+    public void onAttach() {
+        if (!Utilities.INSTANCE.getSmoothKeyboard()) {
+            return;
+        }
+        onDetach();
+        Context context = parent.getContext();
+        Activity activity = getActivity(context);
+        if (activity != null) {
+            ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
+            contentView = decorView.findViewById(Window.ID_ANDROID_CONTENT);
+        }
+        resizableView = findResizableView(parent);
+        if (resizableView != null) {
+            parentForListener = resizableView;
+            resizableView.getViewTreeObserver().addOnPreDrawListener(onPreDrawListener);
+        }
+        if (USE_ANDROID11_INSET_ANIMATOR && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            setupNewCallback();
+        }
+    }
+
+    private Activity getActivity(Context context) {
+        if (context instanceof Activity) {
+            return (Activity) context;
+        } else if (context instanceof ContextThemeWrapper) {
+            return getActivity(((ContextThemeWrapper) context).getBaseContext());
+        }
+        return null;
+    }
+
+    private View findResizableView(View parent) {
+        if (resizableViewToSet != null) {
+            return resizableViewToSet;
+        }
+        View view = parent;
+        while (view != null) {
+//            if (view.getParent() instanceof DrawerLayoutContainer) {
+//                return view;
+//            }
+            if (view.getParent() instanceof View) {
+                view = (View) view.getParent();
+            } else {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    public void onDetach() {
+        if (animator != null) {
+            animator.cancel();
+        }
+        if (parentForListener != null) {
+            parentForListener.getViewTreeObserver().removeOnPreDrawListener(onPreDrawListener);
+            parentForListener = null;
+        }
+        if (parent != null && USE_ANDROID11_INSET_ANIMATOR && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            parent.setWindowInsetsAnimationCallback(null);
+        }
+    }
+
+    private boolean enabled = true;
+    public void setEnabled(boolean value) {
+        this.enabled = value;
+    }
+
+    private boolean ignoreOnce;
+    public void ignoreOnce() {
+        ignoreOnce = true;
+    }
+
+    protected boolean heightAnimationEnabled() {
+        return true;
+    }
+
+    public void OnPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
+        onPanTranslationUpdate(y, progress, keyboardVisible);
+    }
+    public void OnTransitionStart(boolean keyboardVisible, int contentHeight) {
+        onTransitionStart(keyboardVisible, contentHeight);
+    }
+    public void OnTransitionEnd() {
+        onTransitionEnd();
+    }
+
+    protected void onPanTranslationUpdate(float y, float progress, boolean keyboardVisible) {
+
+    }
+
+    protected void onTransitionStart(boolean keyboardVisible, int contentHeight) {
+
+    }
+
+    protected void onTransitionEnd() {
+
+    }
+
+    public void setResizableView(FrameLayout windowView) {
+        resizableViewToSet = windowView;
+    }
+
+    public boolean animationInProgress() {
+        return animationInProgress;
+    }
+
+    public void setCheckHierarchyHeight(boolean checkHierarchyHeight) {
+        this.checkHierarchyHeight = checkHierarchyHeight;
+    }
+
+    public void delayAnimation() {
+       needDelay = true;
+    }
+
+    public void runDelayedAnimation() {
+        Utilities.INSTANCE.cancelRunOnUIThread(delayedAnimationRunnable);
+        delayedAnimationRunnable.run();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.R)
+    private void setupNewCallback() {
+        if (resizableView == null) {
+            return;
+        }
+        resizableView.setWindowInsetsAnimationCallback(
+            new WindowInsetsAnimation.Callback(WindowInsetsAnimation.Callback.DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+                @NonNull
+                @Override
+                public WindowInsets onProgress(@NonNull WindowInsets insets, @NonNull List<WindowInsetsAnimation> runningAnimations) {
+                    if (!animationInProgress || Utilities.INSTANCE.getScreenRefreshRate() < 90) {
+                        return insets;
+                    }
+
+                    WindowInsetsAnimation imeAnimation = null;
+                    for (WindowInsetsAnimation animation : runningAnimations) {
+                        if ((animation.getTypeMask() & WindowInsetsCompat.Type.ime()) != 0) {
+                            imeAnimation = animation;
+                            break;
+                        }
+                    }
+
+                    if (imeAnimation != null && SystemClock.elapsedRealtime() >= startAfter) {
+                        usingInsetAnimator = true;
+                        updateTransition((float) imeAnimation.getInterpolatedFraction());
+                    }
+                    return insets;
+                }
+
+                @Override
+                public void onEnd(@NonNull WindowInsetsAnimation animation) {
+                    if (!animationInProgress || Utilities.INSTANCE.getScreenRefreshRate() < 90) {
+                        return;
+                    }
+                    stopTransition();
+                }
+            }
+        );
+    }
+}

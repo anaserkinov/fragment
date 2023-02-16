@@ -2144,7 +2144,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         fragment.groupId = -2
         fragment.parentFragmentId = parentFragmentId
         fragmentStack.add(fragment)
-        BottomSheet(fragment, fullScreen, height).show(
+        BottomSheet2(fragment, fullScreen, height).show(
             parentActivity.supportFragmentManager,
             fragment.fragmentId.toString()
         )

@@ -4,7 +4,9 @@
 
 package com.ailnor.fragment
 
+import android.app.Dialog
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -39,6 +41,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     // make protected after update bottom sheet
     var arguments: Bundle? = null
         private set
+    private var visibleDialog: Dialog? = null
 
     private var isFinished = false
         set(value) {
@@ -262,7 +265,13 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     open fun onResume() {}
     open fun onPause() {
-
+        try {
+            if (visibleDialog != null && visibleDialog!!.isShowing && dismissDialogOnPause(visibleDialog!!)) {
+                visibleDialog!!.dismiss()
+                visibleDialog = null
+            }
+        } catch (e: java.lang.Exception) {
+        }
     }
 
     open fun onPreResume() {}
@@ -389,7 +398,27 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         } else null
     }
 
-    open fun dismissDialogOnPause(dialog: DialogFragment): Boolean {
+    open fun dismissCurrentDialog() {
+        if (visibleDialog == null) {
+            return
+        }
+        try {
+            visibleDialog!!.dismiss()
+            visibleDialog = null
+        } catch (e: java.lang.Exception) {
+
+        }
+    }
+
+    open fun getVisibleDialog(): Dialog? {
+        return visibleDialog
+    }
+
+    open fun setVisibleDialog(dialog: Dialog) {
+        visibleDialog = dialog
+    }
+
+    open fun dismissDialogOnPause(dialog: Dialog): Boolean {
         return true
     }
 
@@ -398,8 +427,60 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     open fun onBeginSlide() {
-
+        try {
+            if (visibleDialog != null && visibleDialog!!.isShowing) {
+                visibleDialog!!.dismiss()
+                visibleDialog = null
+            }
+        } catch (e: java.lang.Exception) {
+        }
     }
+
+    open fun showDialog(dialog: Dialog?): Dialog? {
+        return showDialog(dialog, false, null)
+    }
+
+    open fun showDialog(
+        dialog: Dialog?,
+        onDismissListener: DialogInterface.OnDismissListener?
+    ): Dialog? {
+        return showDialog(dialog, false, onDismissListener)
+    }
+
+    open fun showDialog(
+        dialog: Dialog?,
+        allowInTransition: Boolean = false,
+        onDismissListener: DialogInterface.OnDismissListener? = null
+    ): Dialog? {
+        if (dialog == null || parentLayout == null || parentLayout!!.startedTracking || !allowInTransition && parentLayout!!.inAnimation) {
+            return null
+        }
+        try {
+            if (visibleDialog != null) {
+                visibleDialog!!.dismiss()
+                visibleDialog = null
+            }
+        } catch (e: java.lang.Exception) {
+        }
+        try {
+            visibleDialog = dialog
+            visibleDialog!!.setCanceledOnTouchOutside(true)
+            visibleDialog!!.setOnDismissListener(DialogInterface.OnDismissListener { dialog1: DialogInterface ->
+                onDismissListener?.onDismiss(dialog1)
+                onDialogDismiss(dialog1 as Dialog)
+                if (dialog1 === visibleDialog) {
+                    visibleDialog = null
+                }
+            })
+            visibleDialog!!.show()
+            return visibleDialog
+        } catch (e: java.lang.Exception) {
+
+        }
+        return null
+    }
+
+    protected open fun onDialogDismiss(dialog: Dialog?) {}
 
     open fun isSwipeBackEnabled(ev: MotionEvent): Boolean {
         return true

@@ -42,6 +42,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     var arguments: Bundle? = null
         private set
     private var visibleDialog: Dialog? = null
+    @set:JvmName("setParentDialogLocal")
+    protected var parentDialog: Dialog? = null
 
     private var isFinished = false
         set(value) {
@@ -197,6 +199,10 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     open fun finishFragment(animated: Boolean) {
         if (isFinishing || isFinished || parentLayout == null)
             return
+        if (parentDialog != null) {
+            parentDialog!!.dismiss()
+            return
+        }
         isFinishing = true
         parentLayout!!.closeLastFragment(this, animated)
     }
@@ -204,6 +210,10 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     open fun finishFragmentById(animated: Boolean) {
         if (isFinishing || isFinished || parentLayout == null)
             return
+        if (parentDialog != null) {
+            parentDialog!!.dismiss()
+            return
+        }
         isFinishing = true
         parentLayout!!.closeFragment(fragmentId, animated)
     }
@@ -214,6 +224,10 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     open fun removeSelfFromStack() {
         if (isFinished || parentLayout == null) {
+            return
+        }
+        if (parentDialog != null) {
+            parentDialog!!.dismiss()
             return
         }
         parentLayout!!.removeScreenFromStack(this)
@@ -465,19 +479,28 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         try {
             visibleDialog = dialog
             visibleDialog!!.setCanceledOnTouchOutside(true)
-            visibleDialog!!.setOnDismissListener(DialogInterface.OnDismissListener { dialog1: DialogInterface ->
+            visibleDialog!!.setOnDismissListener { dialog1: DialogInterface ->
                 onDismissListener?.onDismiss(dialog1)
                 onDialogDismiss(dialog1 as Dialog)
                 if (dialog1 === visibleDialog) {
                     visibleDialog = null
                 }
-            })
+            }
             visibleDialog!!.show()
             return visibleDialog
         } catch (e: java.lang.Exception) {
 
         }
         return null
+    }
+
+
+    open fun showAsSheet(fragment: Fragment, fullScreen: Boolean = false): Array<FragmentContainer?>? {
+       return parentLayout?.showAsSheet(fragment, fullScreen)
+    }
+
+    fun setParentDialog(dialog: Dialog) {
+        parentDialog = dialog
     }
 
     protected open fun onDialogDismiss(dialog: Dialog?) {}

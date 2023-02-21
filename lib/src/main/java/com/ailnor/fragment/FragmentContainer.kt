@@ -2201,12 +2201,16 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         runStackedRunnable()
     }
 
-    fun closeLastFragment(animated: Boolean = true, openPrevious: Boolean = true) {
+    fun closeLastFragment(animated: Boolean = true, openPrevious: Boolean = true, synchronized: Boolean = true) {
         cancelSlide  =true
-        stackRunnable {
+        if (synchronized){
+            stackRunnable {
+                closeLastFragmentInternal(animated, openPrevious)
+            }
+            runStackedRunnable()
+        } else{
             closeLastFragmentInternal(animated, openPrevious)
         }
-        runStackedRunnable()
     }
 
     // Not completed, always close last fragment in stack !!!

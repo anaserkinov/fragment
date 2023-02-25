@@ -17,13 +17,14 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.CallSuper
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
+import com.ailnor.core.AndroidUtilities
 import com.ailnor.core.Theme
-import com.ailnor.core.Utilities
 
 abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
@@ -173,7 +174,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
         lifecycleRegistry = LifecycleRegistry(this)
 
-        fragmentId = Utilities.generateFragmentId()
+        fragmentId = AndroidUtilities.generateFragmentId()
     }
 
     override fun getLifecycle(): Lifecycle {
@@ -422,6 +423,20 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         } catch (e: java.lang.Exception) {
 
         }
+    }
+
+    open fun isLightStatusBar(): Boolean {
+        return false
+//        if (hasForceLightStatusBar() && !Theme.getCurrentTheme().isDark()) {
+//            return true
+//        }
+//        val color: Int
+//        var key: String? = Theme.key_actionBarDefault
+//        if (actionBar != null && actionBar.isActionModeShowed()) {
+//            key = Theme.key_actionBarActionModeDefault
+//        }
+//        color = Theme.getColor(key!!, null, true)
+//        return ColorUtils.calculateLuminance(color) > 0.7f
     }
 
     open fun getVisibleDialog(): Dialog? {

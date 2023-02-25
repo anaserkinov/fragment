@@ -34,6 +34,16 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
         const val ITEM_NAVIGATION = -6
         const val ITEM_OVER_FLOW = -7
+
+        fun getCurrentActionBarHeight(): Int {
+            return if (AndroidUtilities.isTablet) {
+                dp(64)
+            } else if (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
+                dp(48)
+            } else {
+                dp(56)
+            }
+        }
     }
 
     private val home_Drawable by lazy {
@@ -221,7 +231,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         return this
     }
 
-    fun setTitle(title: String?): ActionBar {
+    fun setTitle(title: CharSequence?): ActionBar {
         if (contentView == null) {
             val contentView = TextView(context)
             contentView.textSize = 20f
@@ -407,18 +417,18 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             realWidth,
             if (contentView != null) {
                 if (contentView!!.fitsSystemWindows)
-                    max(dp(64), contentView!!.measuredHeight)
+                    max(getCurrentActionBarHeight(), contentView!!.measuredHeight)
                 else
-                    Utilities.statusBarHeight + max(dp(64), contentView?.measuredHeight ?: 0)
+                    AndroidUtilities.statusBarHeight + max(getCurrentActionBarHeight(), contentView?.measuredHeight ?: 0)
             } else
-                Utilities.statusBarHeight + dp(64)
+                AndroidUtilities.statusBarHeight + getCurrentActionBarHeight()
         )
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         var right = measuredWidth - dp(4)
         var left = dp(4)
-        val top = Utilities.statusBarHeight
+        val top = AndroidUtilities.statusBarHeight
 
         if (navigationView?.visibility == View.VISIBLE) {
             navigationView!!.layout(

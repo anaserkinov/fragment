@@ -25,7 +25,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.ailnor.core.CubicBezierInterpolator;
-import com.ailnor.core.Utilities;
+import com.ailnor.core.AndroidUtilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -86,7 +86,7 @@ public class AdjustPanLayoutHelper {
     ViewTreeObserver.OnPreDrawListener onPreDrawListener = new ViewTreeObserver.OnPreDrawListener() {
         @Override
         public boolean onPreDraw() {
-            if (!Utilities.INSTANCE.getSmoothKeyboard()) {
+            if (!AndroidUtilities.INSTANCE.getSmoothKeyboard()) {
                 onDetach();
                 return true;
             }
@@ -155,7 +155,7 @@ public class AdjustPanLayoutHelper {
         if (needDelay) {
             needDelay = false;
             startAfter = SystemClock.elapsedRealtime() + 100;
-            Utilities.INSTANCE.runOnUIThread(delayedAnimationRunnable, 100);
+            AndroidUtilities.INSTANCE.runOnUIThread(delayedAnimationRunnable, 100);
         } else {
             animator.start();
             startAfter = -1;
@@ -281,7 +281,7 @@ public class AdjustPanLayoutHelper {
     }
 
     public void onAttach() {
-        if (!Utilities.INSTANCE.getSmoothKeyboard()) {
+        if (!AndroidUtilities.INSTANCE.getSmoothKeyboard()) {
             return;
         }
         onDetach();
@@ -394,7 +394,7 @@ public class AdjustPanLayoutHelper {
     }
 
     public void runDelayedAnimation() {
-        Utilities.INSTANCE.cancelRunOnUIThread(delayedAnimationRunnable);
+        AndroidUtilities.INSTANCE.cancelRunOnUIThread(delayedAnimationRunnable);
         delayedAnimationRunnable.run();
     }
 
@@ -408,7 +408,7 @@ public class AdjustPanLayoutHelper {
                 @NonNull
                 @Override
                 public WindowInsets onProgress(@NonNull WindowInsets insets, @NonNull List<WindowInsetsAnimation> runningAnimations) {
-                    if (!animationInProgress || Utilities.INSTANCE.getScreenRefreshRate() < 90) {
+                    if (!animationInProgress || AndroidUtilities.INSTANCE.getScreenRefreshRate() < 90) {
                         return insets;
                     }
 
@@ -429,7 +429,7 @@ public class AdjustPanLayoutHelper {
 
                 @Override
                 public void onEnd(@NonNull WindowInsetsAnimation animation) {
-                    if (!animationInProgress || Utilities.INSTANCE.getScreenRefreshRate() < 90) {
+                    if (!animationInProgress || AndroidUtilities.INSTANCE.getScreenRefreshRate() < 90) {
                         return;
                     }
                     stopTransition();

@@ -47,7 +47,7 @@ import androidx.dynamicanimation.animation.SpringForce;
 import com.ailnor.core.Easings;
 import com.ailnor.core.LocaleController;
 import com.ailnor.core.Theme;
-import com.ailnor.core.Utilities;
+import com.ailnor.core.AndroidUtilities;
 import com.ailnor.core.UtilsKt;
 import com.ailnor.fragment.AnimationProperties;
 import com.ailnor.fragment.Fragment;
@@ -310,7 +310,7 @@ public class Bulletin {
             layout.onExitTransitionEnd();
             layout.onHide();
             if (containerLayout != null) {
-                Utilities.INSTANCE.runOnUIThread(() -> containerLayout.removeView(parentLayout));
+                AndroidUtilities.INSTANCE.runOnUIThread(() -> containerLayout.removeView(parentLayout));
             }
             layout.onDetach();
         }
@@ -441,7 +441,7 @@ public class Bulletin {
                             if (Math.abs(translationX) > layout.getWidth() / 3f) {
                                 final float tx = Math.signum(translationX) * layout.getWidth();
                                 final boolean needAlphaAnimation = (translationX < 0f && needLeftAlphaAnimation) || (translationX > 0f && needRightAlphaAnimation);
-                                layout.animate().translationX(tx).alpha(needAlphaAnimation ? 0f : 1f).setDuration(200).setInterpolator(Utilities.INSTANCE.getAccelerateInterpolator()).withEndAction(() -> {
+                                layout.animate().translationX(tx).alpha(needAlphaAnimation ? 0f : 1f).setDuration(200).setInterpolator(AndroidUtilities.INSTANCE.getAccelerateInterpolator()).withEndAction(() -> {
                                     if (layout.getTranslationX() == tx) {
                                         onHide();
                                     }
@@ -579,7 +579,7 @@ public class Bulletin {
         }
 
         private boolean isWideScreen() {
-            return Utilities.INSTANCE.isTablet() || Utilities.INSTANCE.getDisplaySize().x >= Utilities.INSTANCE.getDisplaySize().y;
+            return AndroidUtilities.INSTANCE.isTablet() || AndroidUtilities.INSTANCE.getDisplaySize().x >= AndroidUtilities.INSTANCE.getDisplaySize().y;
         }
 
         private void setWideScreenParams(@WidthDef int width, @GravityDef int gravity) {
@@ -1001,7 +1001,7 @@ public class Bulletin {
             titleTextView.setSingleLine();
             titleTextView.setTextColor(undoInfoColor);
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            titleTextView.setTypeface(Utilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
+            titleTextView.setTypeface(AndroidUtilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
             linearLayout.addView(titleTextView);
 
             subtitleTextView = new TextView(context);
@@ -1047,7 +1047,7 @@ public class Bulletin {
             titleTextView.setSingleLine();
             titleTextView.setTextColor(undoInfoColor);
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            titleTextView.setTypeface(Utilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
+            titleTextView.setTypeface(AndroidUtilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
             linearLayout.addView(titleTextView);
 
             subtitleTextView = new TextView(context);
@@ -1215,7 +1215,7 @@ public class Bulletin {
                 final int rightInset = LocaleController.INSTANCE.isRTL() ? 0 : UtilsKt.dp(16);
                 undoTextView.setBackground(UtilsKt.createCircleSelectorDrawable((undoCancelColor & 0x00ffffff) | 0x19000000, leftInset, rightInset));
                 undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                undoTextView.setTypeface(Utilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
+                undoTextView.setTypeface(AndroidUtilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
                 undoTextView.setTextColor(undoCancelColor);
                 undoTextView.setText(context.getString(R.string.undo));
                 undoTextView.setGravity(Gravity.CENTER_VERTICAL);

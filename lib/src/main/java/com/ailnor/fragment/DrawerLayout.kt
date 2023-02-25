@@ -15,7 +15,7 @@ import android.view.VelocityTracker
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import com.ailnor.core.Utilities
+import com.ailnor.core.AndroidUtilities
 import com.ailnor.core.dp
 import com.ailnor.core.hideKeyboard
 import com.ailnor.core.measureSpec_exactly
@@ -139,7 +139,7 @@ class DrawerLayout(context: Context) : ViewGroup(context) {
                     val dy = abs(ev.y - startedTrackingY)
                     velocityTracker!!.addMovement(ev)
 
-                    if (maybeStartedTracking && !startedTracking && dx >= Utilities.getPixelsInCM(
+                    if (maybeStartedTracking && !startedTracking && dx >= AndroidUtilities.getPixelsInCM(
                             0.4f,
                             true
                         ) && abs(dx) / 3 > dy

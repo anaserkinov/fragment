@@ -75,9 +75,9 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
 
         dialogView.addView(
             linearLayout,
-            if (Utilities.isLandscape)
+            if (AndroidUtilities.isLandscape)
                 frameLayoutParams(
-                    Utilities.displaySize.y / 2,
+                    AndroidUtilities.displaySize.y / 2,
                     WRAP_CONTENT
                 )
             else
@@ -97,8 +97,8 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
         super.onPreResume()
 
         val layoutParams = linearLayout.layoutParams as FrameLayout.LayoutParams
-        if (Utilities.isLandscape) {
-            layoutParams.width = Utilities.displaySize.y / 2
+        if (AndroidUtilities.isLandscape) {
+            layoutParams.width = AndroidUtilities.displaySize.y / 2
             layoutParams.leftMargin = 0
             layoutParams.rightMargin = 0
         } else {
@@ -161,8 +161,8 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
     override fun onOrientationChanged() {
         super.onOrientationChanged()
         val layoutParams = linearLayout.layoutParams as FrameLayout.LayoutParams
-        if (Utilities.isLandscape) {
-            layoutParams.width = Utilities.displaySize.y / 2
+        if (AndroidUtilities.isLandscape) {
+            layoutParams.width = AndroidUtilities.displaySize.y / 2
             layoutParams.leftMargin = 0
             layoutParams.rightMargin = 0
         } else {

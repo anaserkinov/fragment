@@ -12,7 +12,7 @@ import android.graphics.drawable.Drawable
 import android.os.SystemClock
 import android.view.animation.DecelerateInterpolator
 import com.ailnor.core.Theme
-import com.ailnor.core.Utilities
+import com.ailnor.core.AndroidUtilities
 import com.ailnor.core.dp
 import com.ailnor.core.dp2
 import kotlin.math.abs
@@ -199,8 +199,8 @@ class MenuDrawable @JvmOverloads constructor(type: Int = TYPE_DEFAULT) : Drawabl
                 val color2: Int = Theme.black
                 val backColor2: Int = Theme.black
                 backColor1 =
-                    Utilities.getOffsetColor(backColor1, backColor2, currentRotation, 1.0f)
-                paint.color = Utilities.getOffsetColor(color1, color2, currentRotation, 1.0f)
+                    AndroidUtilities.getOffsetColor(backColor1, backColor2, currentRotation, 1.0f)
+                paint.color = AndroidUtilities.getOffsetColor(color1, color2, currentRotation, 1.0f)
                 paint.alpha = alpha
                 canvas.drawLine(
                     dp(1) * currentRotation,
@@ -230,7 +230,7 @@ class MenuDrawable @JvmOverloads constructor(type: Int = TYPE_DEFAULT) : Drawabl
         if (type != TYPE_DEFAULT && currentRotation != 1.0f || previousType != TYPE_DEFAULT && typeAnimationProgress != 1.0f) {
             val cx: Float = dp(9f + 8f)
             val cy: Float = -dp(4.5f)
-            var rad: Float = Utilities.density * 5.5f
+            var rad: Float = AndroidUtilities.density * 5.5f
             canvas.scale(1.0f - currentRotation, 1.0f - currentRotation, cx, cy)
             if (type == TYPE_DEFAULT) {
                 rad *= 1.0f - typeAnimationProgress
@@ -239,7 +239,7 @@ class MenuDrawable @JvmOverloads constructor(type: Int = TYPE_DEFAULT) : Drawabl
             backPaint.alpha = alpha
             canvas.drawCircle(cx, cy, rad, paint)
             if (type == TYPE_UDPATE_AVAILABLE || previousType == TYPE_UDPATE_AVAILABLE) {
-                backPaint.strokeWidth = Utilities.density * 1.66f
+                backPaint.strokeWidth = AndroidUtilities.density * 1.66f
                 if (previousType == TYPE_UDPATE_AVAILABLE) {
                     backPaint.alpha = (alpha * (1.0f - typeAnimationProgress)).toInt()
                 } else {
@@ -343,7 +343,7 @@ class MenuDrawable @JvmOverloads constructor(type: Int = TYPE_DEFAULT) : Drawabl
 
     init {
         paint.strokeWidth = dp(2f)
-        backPaint.strokeWidth = Utilities.density * 1.66f
+        backPaint.strokeWidth = AndroidUtilities.density * 1.66f
         backPaint.strokeCap = Paint.Cap.ROUND
         backPaint.style = Paint.Style.STROKE
         previousType = TYPE_DEFAULT

@@ -14,7 +14,7 @@ import com.ailnor.core.MATCH_PARENT
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.ailnor.core.Utilities
+import com.ailnor.core.AndroidUtilities
 import com.ailnor.core.dp
 
 class BottomSheet2(
@@ -28,7 +28,7 @@ class BottomSheet2(
         dialog.setOnShowListener {
             (it as BottomSheetDialog).findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
                 ?.let { view ->
-                    if (Utilities.isLandscape || fullScreen) {
+                    if (AndroidUtilities.isLandscape || fullScreen) {
                         val bottomSheetBehavior = BottomSheetBehavior.from(view)
                         bottomSheetBehavior.peekHeight = dp(1000)
                         bottomSheetBehavior.state = BottomSheetBehavior.STATE_EXPANDED

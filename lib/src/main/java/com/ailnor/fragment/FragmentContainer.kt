@@ -121,7 +121,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 if (child.fitsSystemWindows || actionBarHeight != 0)
                                     0
                                 else
-                                    Utilities.statusBarHeight
+                                    AndroidUtilities.statusBarHeight
                     )
                     height = child.measuredHeight
                 }
@@ -150,7 +150,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     var topInset = if (child.fitsSystemWindows || actionBarHeight != 0)
                         0
                     else
-                        Utilities.statusBarHeight
+                        AndroidUtilities.statusBarHeight
                     if (i >= 1 + if (actionBarHeight != 0) 1 else 0) {
 
                     } else
@@ -385,7 +385,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             val rootView = rootView
             getWindowVisibleDisplayFrame(rect)
             val usableViewHeight: Int =
-                rootView.height - (if (rect.top != 0) Utilities.statusBarHeight else 0) - Utilities.getViewInset(
+                rootView.height - (if (rect.top != 0) AndroidUtilities.statusBarHeight else 0) - AndroidUtilities.getViewInset(
                     rootView
                 )
             isKeyboardVisible = usableViewHeight - (rect.bottom - rect.top) > 0
@@ -1335,8 +1335,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 //                drawerLayoutContainer.requestLayout()
 //            }
             val newTopInset = insets.systemWindowInsetTop
-            if (newTopInset != 0 && Utilities.statusBarHeight != newTopInset) {
-                Utilities.statusBarHeight = newTopInset
+            if (newTopInset != 0 && AndroidUtilities.statusBarHeight != newTopInset) {
+                AndroidUtilities.statusBarHeight = newTopInset
             }
 //            if (Build.VERSION.SDK_INT >= 28) {
 //                val cutout = insets.displayCutout
@@ -1368,7 +1368,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         startedTrackingX = x.toInt()
         beginTrackingSent = false
 
-        if (Utilities.isLandscape && containerView.isSplit()) {
+        if (AndroidUtilities.isLandscape && containerView.isSplit()) {
             touchStartedOnSplitted = true
             containerView.prepareForMove()
         } else if (fragmentStack.size > 1) {
@@ -1381,7 +1381,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             val newFragment2: Fragment?
             var leftView: View? = null
             var leftActionBar: ActionBar? = null
-            if (Utilities.isLandscape && fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == newFragment!!.groupId) {
+            if (AndroidUtilities.isLandscape && fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == newFragment!!.groupId) {
                 newFragment2 = fragmentStack[fragmentStack.size - 3]
                 leftView = newFragment2.savedView
                 if (leftView == null)
@@ -1507,7 +1507,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         val dy = abs(ev.y - startedTrackingY)
                         velocityTracker!!.addMovement(ev)
 
-                        if (maybeStartedTracking && !startedTracking && dx >= Utilities.getPixelsInCM(
+                        if (maybeStartedTracking && !startedTracking && dx >= AndroidUtilities.getPixelsInCM(
                                 0.4f,
                                 true
                             ) && abs(dx) / 3 > dy
@@ -1528,7 +1528,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 fragmentStack[fragmentStack.size - 1].onBeginSlide()
                                 beginTrackingSent = true
                             }
-                            if (Utilities.isLandscape && touchStartedOnSplitted)
+                            if (AndroidUtilities.isLandscape && touchStartedOnSplitted)
                                 containerView.translateX(dx)
                             else {
                                 containerView.translationX = dx.toFloat()
@@ -1561,7 +1561,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             val velX = velocityTracker!!.xVelocity
                             val velY = velocityTracker!!.yVelocity
 
-                            if (Utilities.isLandscape && touchStartedOnSplitted) {
+                            if (AndroidUtilities.isLandscape && touchStartedOnSplitted) {
                                 containerView.finishTranslation(velX, velY)
                             } else {
                                 val x = containerView.x
@@ -2038,7 +2038,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         forceWithoutAnimation: Boolean,
         uniqueWith: Int
     ): Boolean {
-        return if (!Utilities.isLandscape)
+        return if (!AndroidUtilities.isLandscape)
             presentFragmentInternal(
                 fragment,
                 parentFragmentId,
@@ -2066,7 +2066,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     ): Boolean {
         cancelSlide = true
         stackRunnable {
-            if (!Utilities.isLandscape)
+            if (!AndroidUtilities.isLandscape)
                 presentFragment(
                     fragment,
                     parentFragmentId,
@@ -2155,6 +2155,41 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             parentActivity.supportFragmentManager,
             fragment.fragmentId.toString()
         )
+    }
+
+    fun showAsListSheet(fragment: Fragment, fullScreen: Boolean = false): Array<FragmentContainer?>? {
+        val actionBarLayout = arrayOf<FragmentContainer?>(FragmentContainer(context))
+        val bottomSheet: BottomSheet = object : BottomSheet(parentActivity, true) {
+            init {
+                isFullscreen = fullScreen
+                actionBarLayout[0]!!.addFragmentToStack(fragment, true, 0)
+                actionBarLayout[0]!!.showLastFragment()
+                actionBarLayout[0]!!.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0)
+                containerView = actionBarLayout[0]
+                setApplyBottomPadding(false)
+                setOnDismissListener { dialog -> fragment.onFragmentDestroy() }
+            }
+
+            override fun canDismissWithSwipe(): Boolean {
+                return false
+            }
+
+            override fun onBackPressed() {
+                if (actionBarLayout[0] == null || actionBarLayout[0]!!.fragmentsCount <= 1) {
+                    super.onBackPressed()
+                } else {
+                    actionBarLayout[0]?.onBackPressed()
+                }
+            }
+
+            override fun dismiss() {
+                super.dismiss()
+                actionBarLayout[0] = null
+            }
+        }
+        fragment.setParentDialog(bottomSheet)
+        bottomSheet.show()
+        return actionBarLayout
     }
 
     fun showAsSheet(fragment: Fragment, fullScreen: Boolean = false): Array<FragmentContainer?>? {
@@ -2286,7 +2321,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             if (fragmentStack.size > 1 && fragmentStack[fragmentStack.size - 2].groupId == currentGroupId) {
                 groupRemoved = false
                 newFragment = fragmentStack[fragmentStack.size - 2]
-                if (Utilities.isLandscape) {
+                if (AndroidUtilities.isLandscape) {
                     oldFragment = _oldFragment
                     if (fragmentStack.size == 2 && fragmentStack[fragmentStack.size - 2].groupId == currentGroupId ||
                         fragmentStack.size > 2 && fragmentStack[fragmentStack.size - 3].groupId == currentGroupId
@@ -2342,7 +2377,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             var leftActionBar: ActionBar? = null
 
             if (fragmentStack.size > 2) {
-                if (!_oldFragment.isDialog && (Utilities.isLandscape && fragmentStack[fragmentStack.size - 3].groupId == newFragment!!.groupId || newFragment?.isDialog == true)) {
+                if (!_oldFragment.isDialog && (AndroidUtilities.isLandscape && fragmentStack[fragmentStack.size - 3].groupId == newFragment!!.groupId || newFragment?.isDialog == true)) {
                     newFragment2 = fragmentStack[fragmentStack.size - 3]
                     leftView = newFragment2!!.savedView
                     if (leftView == null)
@@ -2666,7 +2701,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             if (fragmentStack.size > 1) {
                 val preScreen = fragmentStack[fragmentStack.size - 2]
                 if (preScreen.groupId == fragmentStack[fragmentStack.size - 1].groupId) {
-                    if (Utilities.isLandscape) {
+                    if (AndroidUtilities.isLandscape) {
                         newFragment = preScreen
                         fragmentStack[fragmentStack.size - 1].actionBar?.drawableRotation = 1f
                         var screenView = preScreen.savedView

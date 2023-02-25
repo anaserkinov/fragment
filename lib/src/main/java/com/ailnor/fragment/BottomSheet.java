@@ -54,17 +54,21 @@ import androidx.annotation.RequiresApi;
 import androidx.core.view.NestedScrollingParent;
 import androidx.core.view.NestedScrollingParentHelper;
 import androidx.core.view.ViewCompat;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleEventObserver;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.LifecycleRegistry;
 
 import com.ailnor.core.CubicBezierInterpolator;
 import com.ailnor.core.LocaleController;
 import com.ailnor.core.Theme;
-import com.ailnor.core.Utilities;
+import com.ailnor.core.AndroidUtilities;
 import com.ailnor.core.UtilsKt;
 import com.ailnor.fragment.bulletin.Bulletin;
 
 import java.util.ArrayList;
 
-public class BottomSheet extends Dialog {
+public class BottomSheet extends Dialog implements LifecycleOwner {
     private final static boolean AVOID_SYSTEM_CUTOUT_FULLSCREEN = false;
     protected ViewGroup containerView;
     protected ContainerView container;
@@ -118,7 +122,7 @@ public class BottomSheet extends Dialog {
     private boolean allowCustomAnimation = true;
     private boolean showWithoutAnimation;
 
-    private int statusBarHeight = Utilities.INSTANCE.getStatusBarHeight();
+    private int statusBarHeight = AndroidUtilities.INSTANCE.getStatusBarHeight();
 
     protected boolean calcMandatoryInsets;
 
@@ -173,7 +177,10 @@ public class BottomSheet extends Dialog {
     private float hideSystemVerticalInsetsProgress;
     public boolean useBackgroundTopPadding = true;
 
-    protected class ContainerView extends FrameLayout implements NestedScrollingParent {
+    private LifecycleRegistry lifecycleRegistry = new LifecycleRegistry(this);
+    public Fragment.LifecycleCallback lifecycleCallback;
+
+    public class ContainerView extends FrameLayout implements NestedScrollingParent {
 
         private VelocityTracker velocityTracker = null;
         private int startedTrackingX;
@@ -271,7 +278,7 @@ public class BottomSheet extends Dialog {
 
         private void checkDismiss(float velX, float velY) {
             float translationY = containerView.getTranslationY();
-            boolean backAnimation = translationY < Utilities.INSTANCE.getPixelsInCM(0.8f, false) && (velY < 3500 || Math.abs(velY) < Math.abs(velX)) || velY < 0 && Math.abs(velY) >= 3500;
+            boolean backAnimation = translationY < AndroidUtilities.INSTANCE.getPixelsInCM(0.8f, false) && (velY < 3500 || Math.abs(velY) < Math.abs(velX)) || velY < 0 && Math.abs(velY) >= 3500;
             if (!backAnimation) {
                 boolean allowOld = allowCustomAnimation;
                 allowCustomAnimation = false;
@@ -290,7 +297,7 @@ public class BottomSheet extends Dialog {
                     ObjectAnimator.ofFloat(containerView, "translationY", 0),
                     invalidateContainer
                 );
-                currentAnimation.setDuration((int) (250 * (Math.max(0, translationY) / Utilities.INSTANCE.getPixelsInCM(0.8f, false))));
+                currentAnimation.setDuration((int) (250 * (Math.max(0, translationY) / AndroidUtilities.INSTANCE.getPixelsInCM(0.8f, false))));
                 currentAnimation.setInterpolator(CubicBezierInterpolator.DEFAULT);
                 currentAnimation.addListener(new AnimatorListenerAdapter() {
                     @Override
@@ -392,7 +399,7 @@ public class BottomSheet extends Dialog {
             getWindowVisibleDisplayFrame(rect);
             int oldKeyboardHeight = keyboardHeight;
             if (rect.bottom != 0 && rect.top != 0) {
-                int usableViewHeight = (int) (rootView.getHeight() - (rect.top != 0 ? Utilities.INSTANCE.getStatusBarHeight() * (1f - hideSystemVerticalInsetsProgress) : 0) - Utilities.INSTANCE.getViewInset(rootView) * (1f - hideSystemVerticalInsetsProgress));
+                int usableViewHeight = (int) (rootView.getHeight() - (rect.top != 0 ? AndroidUtilities.INSTANCE.getStatusBarHeight() * (1f - hideSystemVerticalInsetsProgress) : 0) - AndroidUtilities.INSTANCE.getViewInset(rootView) * (1f - hideSystemVerticalInsetsProgress));
                 keyboardHeight = Math.max(0, usableViewHeight - (rect.bottom - rect.top));
                 if (keyboardHeight < dp(20)) {
                     keyboardHeight = 0;
@@ -435,8 +442,8 @@ public class BottomSheet extends Dialog {
             if (containerView != null) {
                 if (!fullWidth) {
                     int widthSpec;
-                    if (Utilities.INSTANCE.isTablet()) {
-                        widthSpec = MeasureSpec.makeMeasureSpec((int) (Math.min(Utilities.INSTANCE.getDisplaySize().x, Utilities.INSTANCE.getDisplaySize().y) * 0.8f) + backgroundPaddingLeft * 2, MeasureSpec.EXACTLY);
+                    if (AndroidUtilities.INSTANCE.isTablet()) {
+                        widthSpec = MeasureSpec.makeMeasureSpec((int) (Math.min(AndroidUtilities.INSTANCE.getDisplaySize().x, AndroidUtilities.INSTANCE.getDisplaySize().y) * 0.8f) + backgroundPaddingLeft * 2, MeasureSpec.EXACTLY);
                     } else {
                         widthSpec = MeasureSpec.makeMeasureSpec((getBottomSheetWidth(isPortrait, width, height)) + backgroundPaddingLeft * 2, MeasureSpec.EXACTLY);
                     }
@@ -558,7 +565,7 @@ public class BottomSheet extends Dialog {
                 }
             }
             if (layoutCount == 0 && startAnimationRunnable != null) {
-                Utilities.INSTANCE.cancelRunOnUIThread(startAnimationRunnable);
+                AndroidUtilities.INSTANCE.cancelRunOnUIThread(startAnimationRunnable);
                 startAnimationRunnable.run();
                 startAnimationRunnable = null;
             }
@@ -618,11 +625,11 @@ public class BottomSheet extends Dialog {
             if (!shouldOverlayCameraViewOverNavBar()) {
                 drawNavigationBar(canvas, (drawDoubleNavigationBar ? 0.7f * navigationBarAlpha : 1f));
             }
-            if (drawNavigationBar && rightInset != 0 && rightInset > leftInset && fullWidth && Utilities.INSTANCE.getDisplaySize().x > Utilities.INSTANCE.getDisplaySize().y) {
+            if (drawNavigationBar && rightInset != 0 && rightInset > leftInset && fullWidth && AndroidUtilities.INSTANCE.getDisplaySize().x > AndroidUtilities.INSTANCE.getDisplaySize().y) {
                 canvas.drawRect(containerView.getRight() - backgroundPaddingLeft, containerView.getTranslationY(), containerView.getRight() + rightInset, getMeasuredHeight(), backgroundPaint);
             }
 
-            if (drawNavigationBar && leftInset != 0 && leftInset > rightInset && fullWidth && Utilities.INSTANCE.getDisplaySize().x > Utilities.INSTANCE.getDisplaySize().y) {
+            if (drawNavigationBar && leftInset != 0 && leftInset > rightInset && fullWidth && AndroidUtilities.INSTANCE.getDisplaySize().x > AndroidUtilities.INSTANCE.getDisplaySize().y) {
                 canvas.drawRect(0, containerView.getTranslationY(), containerView.getLeft() + backgroundPaddingLeft, getMeasuredHeight(), backgroundPaint);
             }
 
@@ -807,13 +814,13 @@ public class BottomSheet extends Dialog {
                 textView.setGravity(Gravity.CENTER);
                 textView.setTextColor(Theme.black);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                textView.setTypeface(Utilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
+                textView.setTypeface(AndroidUtilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
                 addView(textView, frameLayoutParams(MATCH_PARENT, MATCH_PARENT, Gravity.CENTER));
             } else if (type == 2) {
                 textView.setGravity(Gravity.CENTER);
                 textView.setTextColor(Theme.black);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                textView.setTypeface(Utilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
+                textView.setTypeface(AndroidUtilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
                 textView.setBackground(Theme.AdaptiveRipple.INSTANCE.filledCircle(Theme.black, 4));
                 addView(textView, frameLayoutParams(MATCH_PARENT, MATCH_PARENT, 0, 16, 16, 16, 16));
             }
@@ -950,7 +957,7 @@ public class BottomSheet extends Dialog {
             container.setFitsSystemWindows(true);
             container.setOnApplyWindowInsetsListener((v, insets) -> {
                 int newTopInset = insets.getSystemWindowInsetTop();
-                if ((newTopInset != 0 || Utilities.INSTANCE.isInMultiWindow()) && statusBarHeight != newTopInset) {
+                if ((newTopInset != 0 || AndroidUtilities.INSTANCE.isInMultiWindow()) && statusBarHeight != newTopInset) {
                     statusBarHeight = newTopInset;
                 }
                 lastInsets = insets;
@@ -969,6 +976,12 @@ public class BottomSheet extends Dialog {
         }
 
         backDrawable.setAlpha(0);
+    }
+
+    @NonNull
+    @Override
+    public Lifecycle getLifecycle() {
+        return lifecycleRegistry;
     }
 
     protected void mainContainerDispatchDraw(Canvas canvas) {
@@ -1003,7 +1016,7 @@ public class BottomSheet extends Dialog {
             }
         }
         if (useLightNavBar && Build.VERSION.SDK_INT >= 26) {
-            Utilities.INSTANCE.setLightNavigationBar(getWindow(), false);
+            AndroidUtilities.INSTANCE.setLightNavigationBar(getWindow(), false);
         }
 
         if (containerView == null) {
@@ -1052,7 +1065,7 @@ public class BottomSheet extends Dialog {
             if (bigTitle) {
                 titleView.setTextColor(Theme.black);
                 titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-                titleView.setTypeface(Utilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
+                titleView.setTypeface(AndroidUtilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
                 titleView.setPadding(dp(21), dp(multipleLinesTitle ? 14 : 6), dp(21), dp(8));
             } else {
                 titleView.setTextColor(Theme.grey_600);
@@ -1130,12 +1143,38 @@ public class BottomSheet extends Dialog {
             params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
         window.setAttributes(params);
+
+        lifecycleRegistry.addObserver((LifecycleEventObserver) (source, event) -> {
+            if (event == Lifecycle.Event.ON_STOP)
+                container.cancelPendingInputEvents();
+        });
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE);
+        if (lifecycleCallback != null)
+            lifecycleCallback.onChange(Lifecycle.Event.ON_CREATE);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START);
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME);
+        if (lifecycleCallback != null) {
+            lifecycleCallback.onChange(Lifecycle.Event.ON_START);
+            lifecycleCallback.onChange(Lifecycle.Event.ON_RESUME);
+        }
     }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE);
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP);
+        if (lifecycleCallback != null) {
+            lifecycleCallback.onChange(Lifecycle.Event.ON_PAUSE);
+            lifecycleCallback.onChange(Lifecycle.Event.ON_STOP);
+        }
+    }
+
 
     public void setUseLightStatusBar(boolean value) {
         useLightStatusBar = value;
@@ -1188,7 +1227,7 @@ public class BottomSheet extends Dialog {
         }
         dismissed = false;
         cancelSheetAnimation();
-        containerView.measure(View.MeasureSpec.makeMeasureSpec(Utilities.INSTANCE.getDisplaySize().x + backgroundPaddingLeft * 2, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(Utilities.INSTANCE.getDisplaySize().y, View.MeasureSpec.AT_MOST));
+        containerView.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.INSTANCE.getDisplaySize().x + backgroundPaddingLeft * 2, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(AndroidUtilities.INSTANCE.getDisplaySize().y, View.MeasureSpec.AT_MOST));
         if (showWithoutAnimation) {
             backDrawable.setAlpha(dimBehind ? dimBehindAlpha : 0);
             containerView.setTranslationY(0);
@@ -1197,8 +1236,8 @@ public class BottomSheet extends Dialog {
         backDrawable.setAlpha(0);
         if (Build.VERSION.SDK_INT >= 18) {
             layoutCount = 2;
-            containerView.setTranslationY((Build.VERSION.SDK_INT >= 21 ? Utilities.INSTANCE.getStatusBarHeight() * (1f - hideSystemVerticalInsetsProgress) : 0) + containerView.getMeasuredHeight() + (scrollNavBar ? getBottomInset() : 0));
-            Utilities.INSTANCE.runOnUIThread(startAnimationRunnable = new Runnable() {
+            containerView.setTranslationY((Build.VERSION.SDK_INT >= 21 ? AndroidUtilities.INSTANCE.getStatusBarHeight() * (1f - hideSystemVerticalInsetsProgress) : 0) + containerView.getMeasuredHeight() + (scrollNavBar ? getBottomInset() : 0));
+            AndroidUtilities.INSTANCE.runOnUIThread(startAnimationRunnable = new Runnable() {
                 @Override
                 public void run() {
                     if (startAnimationRunnable != this || dismissed) {
@@ -1378,7 +1417,7 @@ public class BottomSheet extends Dialog {
         delegate = bottomSheetDelegate;
     }
 
-    public FrameLayout getContainer() {
+    public ContainerView getContainer() {
         return container;
     }
 
@@ -1459,7 +1498,7 @@ public class BottomSheet extends Dialog {
                     if (onClickListener != null) {
                         onClickListener.onClick(BottomSheet.this, item);
                     }
-                    Utilities.INSTANCE.runOnUIThread(() -> {
+                    AndroidUtilities.INSTANCE.runOnUIThread(() -> {
                         if (onHideListener != null) {
                             onHideListener.onDismiss(BottomSheet.this);
                         }
@@ -1510,6 +1549,9 @@ public class BottomSheet extends Dialog {
         if (dismissed) {
             return;
         }
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY);
+        if (lifecycleCallback != null)
+            lifecycleCallback.onChange(Lifecycle.Event.ON_DESTROY);
         dismissed = true;
         if (onHideListener != null) {
             onHideListener.onDismiss(this);
@@ -1550,7 +1592,7 @@ public class BottomSheet extends Dialog {
                     if (currentSheetAnimation != null && currentSheetAnimation.equals(animation)) {
                         currentSheetAnimation = null;
                         currentSheetAnimationType = 0;
-                        Utilities.INSTANCE.runOnUIThread(() -> {
+                        AndroidUtilities.INSTANCE.runOnUIThread(() -> {
                             try {
                                 dismissInternal();
                             } catch (Exception e) {
@@ -1786,8 +1828,8 @@ public class BottomSheet extends Dialog {
 //            Utilities.setLightStatusBar(getWindow(), !useLightStatusBar);
 //            Utilities.setLightNavigationBar(getWindow(), !useLightNavBar);
 //        }
-        Utilities.INSTANCE.setNavigationBarColor(getWindow(), overlayDrawNavBarColor);
-        Utilities.INSTANCE.setLightNavigationBar(getWindow(), Utilities.INSTANCE.computePerceivedBrightness(overlayDrawNavBarColor) > .721);
+        AndroidUtilities.INSTANCE.setNavigationBarColor(getWindow(), overlayDrawNavBarColor);
+        AndroidUtilities.INSTANCE.setLightNavigationBar(getWindow(), AndroidUtilities.INSTANCE.computePerceivedBrightness(overlayDrawNavBarColor) > .721);
     }
 
     public ViewGroup getContainerView() {

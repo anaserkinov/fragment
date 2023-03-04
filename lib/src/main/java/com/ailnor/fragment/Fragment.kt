@@ -481,7 +481,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     open fun showDialog(
         dialog: Dialog?,
         allowInTransition: Boolean = false,
-        onDismissListener: DialogInterface.OnDismissListener? = null
+        onDismissListener: DialogInterface.OnDismissListener? = null,
+        onShowListener: DialogInterface.OnShowListener? = null
     ): Dialog? {
         if (dialog == null || parentLayout == null || parentLayout!!.startedTracking || !allowInTransition && parentLayout!!.inAnimation) {
             return null
@@ -498,6 +499,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             visibleDialog!!.setCanceledOnTouchOutside(true)
             visibleDialog!!.setOnShowListener {
                 tempDismiss = false
+                onShowListener?.onShow(it as Dialog)
             }
             visibleDialog!!.setOnDismissListener { dialog1: DialogInterface ->
                 onDismissListener?.onDismiss(dialog1)

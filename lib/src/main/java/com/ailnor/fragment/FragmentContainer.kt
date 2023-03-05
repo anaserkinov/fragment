@@ -101,11 +101,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 //                        widthMeasureSpec,
 //                        measureSpec_exactly(
 //                            height - if (child.fitsSystemWindows)
-//                                -Utilities.statusBarHeight
+//                                -AndroidUtilities.statusBarHeight
 //                            else if (actionBarHeight != 0)
 //                                actionBarHeight
 //                            else
-//                                (actionBarHeight + Utilities.statusBarHeight)
+//                                (actionBarHeight + AndroidUtilities.statusBarHeight)
 //                        )
 //                    )
 

@@ -199,7 +199,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     }
 
-    open fun finishFragment(animated: Boolean) {
+    open fun finishFragment(animated: Boolean, synchronized: Boolean = true) {
         if (isFinishing || isFinished || parentLayout == null)
             return
         if (parentDialog != null) {
@@ -207,7 +207,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             return
         }
         isFinishing = true
-        parentLayout!!.closeLastFragment(this, animated)
+        parentLayout!!.closeLastFragment(this, animated, synchronized)
     }
 
     open fun finishFragmentById(animated: Boolean) {

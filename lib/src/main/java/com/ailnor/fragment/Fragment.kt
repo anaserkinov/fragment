@@ -46,6 +46,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     @set:JvmName("setParentDialogLocal")
     protected var parentDialog: Dialog? = null
 
+    var dialog: Dialog? = null
+
     private var tempDismiss = false
 
     private var isFinished = false

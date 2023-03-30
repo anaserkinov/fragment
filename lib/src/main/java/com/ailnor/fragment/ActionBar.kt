@@ -27,6 +27,11 @@ import kotlin.math.max
 open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(context) {
 
     companion object {
+        const val SHOW_AS_ACTION_IF_ROOM = 0x1
+        const val SHOW_AS_ACTION_ALWAYS = 0x2
+        const val SEARCH = 0x4
+        const val BADGE = 0x8
+
         const val NONE = -1
         const val HOME = -2
         const val BACK = -3
@@ -353,7 +358,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                     }
                     if (leftSpace == 0) {
                         child.visibility = GONE
-                        if (layoutParams.flags and LayoutParams.SHOW_AS_ACTION_IF_ROOM != 0 && !activeOverflowItems.contains(
+                        if (layoutParams.flags and SHOW_AS_ACTION_IF_ROOM != 0 && !activeOverflowItems.contains(
                                 layoutParams
                             )
                         )
@@ -369,7 +374,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                                 val preChild = getChildAt(i - 1)
                                 preChild.visibility = View.GONE
                                 val preChildParams = preChild.layoutParams as LayoutParams
-                                if (preChildParams.flags and LayoutParams.SHOW_AS_ACTION_ALWAYS == 0 && !activeOverflowItems.contains(
+                                if (preChildParams.flags and SHOW_AS_ACTION_ALWAYS == 0 && !activeOverflowItems.contains(
                                         preChildParams
                                     )
                                 )
@@ -380,7 +385,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                             if (leftSpace < dp(48))
                                 width -= dp(48) - leftSpace
                         }
-                        if (layoutParams.flags and LayoutParams.SHOW_AS_ACTION_IF_ROOM != 0) {
+                        if (layoutParams.flags and SHOW_AS_ACTION_IF_ROOM != 0) {
                             child.visibility = GONE
                             if (!activeOverflowItems.contains(layoutParams))
                                 activeOverflowItems.add(layoutParams)
@@ -513,7 +518,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         else {
             val view = layoutParams.getView(context, iconRes != 0)
             view.setOnClickListener {
-                if (flags and LayoutParams.SEARCH == 0)
+                if (flags and SEARCH == 0)
                     actionListener.onAction(itemId)
                 else {
                     searchCloseButton!!.visibility = View.VISIBLE
@@ -525,7 +530,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             layoutParams.flags = flags
             addView(view, childCount - 1, layoutParams)
 
-            if (flags and LayoutParams.SEARCH != 0) {
+            if (flags and SEARCH != 0) {
 
                 editText = EditText(context)
                 editText!!.background = null
@@ -574,7 +579,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         view.setOnClickListener {
             if (!isEnabled)
                 return@setOnClickListener
-            if (layoutParams.flags and LayoutParams.SEARCH == 0)
+            if (layoutParams.flags and SEARCH == 0)
                 actionListener.onAction(layoutParams.itemId)
             else {
                 tempNavigationType = navigationType
@@ -820,7 +825,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                     actionBar!!.childCount - 1,
                     item
                 )
-                if (item!!.flags and LayoutParams.SEARCH != 0)
+                if (item!!.flags and SEARCH != 0)
                     actionBar!!.addSearch()
             }
             item = null
@@ -835,11 +840,6 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
     class LayoutParams(var itemId: Int) :
         ViewGroup.LayoutParams(WRAP_CONTENT, WRAP_CONTENT) {
-        companion object {
-            const val SHOW_AS_ACTION_IF_ROOM = 0b1
-            const val SHOW_AS_ACTION_ALWAYS = 0b10
-            const val SEARCH = 0b100
-        }
 
         private var view: View? = null
         var icon: Int = 0
@@ -895,7 +895,10 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             return if (isIcon) {
                 if (view is ImageView)
                     return view!!
-                val imageView = ImageView(context)
+                val imageView = if (flags and BADGE != 0)
+                    BadgeImageView(context)
+                else
+                    ImageView(context)
                 imageView.setPadding(dp(12))
                 if (icon != 0)
                     imageView.setImageResource(icon)
@@ -908,7 +911,10 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             } else {
                 if (view is TextView)
                     return view!!
-                val textView = TextView(context)
+                val textView = if (flags and BADGE != 0)
+                    BadgeTextView(context)
+                else
+                    TextView(context)
                 textView.textSize = 14f
                 textView.setPadding(dp(8))
                 if (title != 0)

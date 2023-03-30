@@ -10,12 +10,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.Lifecycle
+import com.ailnor.core.AndroidUtilities
 import com.ailnor.core.MATCH_PARENT
+import com.ailnor.core.dp
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.ailnor.core.AndroidUtilities
-import com.ailnor.core.dp
 
 class BottomSheet2(
     private val screen: Fragment? = null,
@@ -25,6 +25,7 @@ class BottomSheet2(
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = BottomSheetDialog(requireContext(), theme)
+        screen?.dialog = dialog
         dialog.setOnShowListener {
             (it as BottomSheetDialog).findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
                 ?.let { view ->

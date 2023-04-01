@@ -1095,7 +1095,7 @@ public class Bulletin {
             addView(imageView, frameLayoutParams(dp(56), dp(48), Gravity.START | Gravity.CENTER_VERTICAL));
 
             textView = new TextView(context);
-            textView.setSingleLine();
+//            textView.setSingleLine();
             textView.setTypeface(Typeface.SANS_SERIF);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView.setEllipsize(TextUtils.TruncateAt.END);

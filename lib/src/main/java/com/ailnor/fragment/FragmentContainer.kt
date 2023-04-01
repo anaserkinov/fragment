@@ -535,7 +535,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             }
                         }
                     } else {
-                        removingFragment++
+                        removingFragmentInAnimation++
                         val leftFrameWeightDist = 1f - leftFrameWeight
                         object : Animation() {
                             init {
@@ -633,7 +633,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             }
                         }
                     } else {
-                        removingFragment++
+                        removingFragmentInAnimation++
                         val frameWeightDist = 0.35f - frameWeight
                         val leftFrameWeightDist = 0.65f - leftFrameWeight
                         object : Animation() {
@@ -855,7 +855,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             if (forceWithoutAnimation) {
                 if (oldFragment != null) {
                     oldFragment!!.onPrePause()
-                    removingFragment++
+                    removingFragmentInAnimation++
                     finishFragment(oldFragment!!)
                 }
 
@@ -905,7 +905,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         private fun startLastPreviousAnimation() {
             inAnimation = true
-            removingFragment++
+            removingFragmentInAnimation++
             var thisInAnimation = true
             animationType = FROM_LEFT
 
@@ -1012,7 +1012,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         private fun startPreviousAnimation(view: View, actionBar: ActionBar?) {
             inAnimation = true
-            removingFragment++
+            removingFragmentInAnimation++
             var thisInAnimation = true
             animationType = FROM_LEFT
 
@@ -1204,7 +1204,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         private fun startReplaceAnimation(view: View, actionBar: ActionBar?) {
             inAnimation = true
-            removingFragment++
+            removingFragmentInAnimation++
             var thisInAnimation = true
             animationType = FROM_RIGHT_FLOATING
 
@@ -1295,14 +1295,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     //    private var interpolator = FastOutLinearInInterpolator()
     private var currentGroupId = 0
-    private var removingFragment = 0
-        set(value) {
-            field = value
-        }
+    private var removingFragmentInAnimation = 0
+    private var removingFragmentInWait = 0
     val fragmentsCount: Int
         get() = fragmentStack.size
     val fragmentCountInAnimation: Int
-        get() = fragmentStack.size - removingFragment
+        get() = fragmentStack.size - removingFragmentInAnimation
     var clearable = false
 
     private var oldFragment: Fragment? = null
@@ -1435,9 +1433,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 )
             }
         } else {
-            removingFragment++
+            removingFragmentInAnimation++
             if (!touchStartedOnSplitted && containerView.isSplit()) {
-                removingFragment++
+                removingFragmentInAnimation++
                 finishFragment(fragmentStack[fragmentStack.size - 1])
 
                 val fragment = fragmentStack[fragmentStack.size - 1]
@@ -1762,7 +1760,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         fragment.onFragmentDestroy()
         fragment.parentLayout = null
         fragmentStack.remove(fragment)
-        removingFragment--
+        removingFragmentInAnimation--
     }
 
     fun presentFragmentGroup(
@@ -1915,7 +1913,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     } else
                         null
                     if (removeLast) {
-                        removingFragment++
+                        removingFragmentInAnimation++
                         if (oldFragment.groupId == -2)
                             (parentActivity.supportFragmentManager.findFragmentByTag(oldFragment.fragmentId.toString()) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
                         else
@@ -1930,7 +1928,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             } else {
                 inAnimation = true
                 if (removeLast)
-                    removingFragment++
+                    removingFragmentInAnimation++
                 containerView.translationX = measuredWidth * 0.5f
                 containerView.alpha = 0f
                 containerView.visibility = VISIBLE
@@ -1970,7 +1968,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             } else
                                 null
                             if (removeLast) {
-                                removingFragment++
+                                removingFragmentInAnimation++
                                 if (oldFragment.groupId == -2)
                                     (parentActivity.supportFragmentManager.findFragmentByTag(
                                         oldFragment.fragmentId.toString()
@@ -2098,6 +2096,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (!fragment.onFragmentCreate()) {
             return false
         }
+        var removeLast = removeLast
 
         fragment.groupId = currentGroupId
         if (innerGroup)
@@ -2124,6 +2123,20 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 null
         } else
             null
+
+        if (oldFragment?.groupId == -2){
+            oldFragment!!.finishFragment(false, false)
+            removeLast = false
+            oldFragment = if (fragmentStack.size > 1) {
+                if (removeLast)
+                    fragmentStack[fragmentStack.size - 1]
+                else if (fragmentStack[fragmentStack.size - 2].groupId == currentGroupId && containerView.isSplit())
+                    fragmentStack[fragmentStack.size - 2]
+                else
+                    null
+            } else
+                null
+        }
 
         fragmentStack.add(fragment)
 
@@ -2157,7 +2170,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         )
     }
 
-    fun showAsListSheet(fragment: Fragment, fullScreen: Boolean = false): Array<FragmentContainer?>? {
+    fun showAsListSheet(
+        fragment: Fragment,
+        fullScreen: Boolean = false
+    ): Array<FragmentContainer?>? {
         val actionBarLayout = arrayOf<FragmentContainer?>(FragmentContainer(context))
         val bottomSheet: BottomSheet = object : BottomSheet(parentActivity, true) {
             init {
@@ -2267,15 +2283,25 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         return true
     }
 
-    fun closeLastFragment(fragment: Fragment, animated: Boolean = true) {
+    fun closeLastFragment(
+        fragment: Fragment,
+        animated: Boolean = true,
+        synchronized: Boolean = true
+    ) {
         cancelSlide = true
-        stackRunnable {
+        if (synchronized) {
+            stackRunnable {
+                closeLastFragmentInternal(
+                    animated,
+                    fragmentStack.indexOf(fragment) != fragmentStack.size - 1
+                )
+            }
+            runStackedRunnable()
+        } else
             closeLastFragmentInternal(
                 animated,
                 fragmentStack.indexOf(fragment) != fragmentStack.size - 1
             )
-        }
-        runStackedRunnable()
     }
 
     fun closeLastFragment(
@@ -2285,7 +2311,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     ) {
         cancelSlide = true
         if (synchronized) {
+            removingFragmentInWait++
             stackRunnable {
+                removingFragmentInWait--
                 closeLastFragmentInternal(animated, openPrevious)
             }
             runStackedRunnable()
@@ -2313,7 +2341,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         _oldFragment.isFinishing = true
 
         if (_oldFragment.groupId == -2) {
-            removingFragment++
+            if (animated)
+                removingFragmentInAnimation++
+            else
+                fragmentStack.remove(_oldFragment)
             (parentActivity.supportFragmentManager.findFragmentByTag(_oldFragment.fragmentId.toString()) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
         } else if (fragmentStack.size != 1 || clearable) {
             val groupRemoved: Boolean
@@ -2356,7 +2387,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     } else if (_oldFragment.isDialog) {
                         if (oldFragment != null) {
                             oldFragment!!.onPrePause()
-                            removingFragment++
+                            removingFragmentInAnimation++
                             finishFragment(oldFragment!!)
                         }
                     } else
@@ -2366,7 +2397,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             } else
                 groupRemoved = true
 
-            removingFragment++
+            removingFragmentInAnimation++
 
             newFragment = if (fragmentStack.size > 1)
                 fragmentStack[fragmentStack.size - 2]
@@ -2511,7 +2542,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             currentGroupId = 0
             val lastFragment = fragmentStack[0]
             lastFragment.onPrePause()
-            removingFragment++
+            removingFragmentInAnimation++
             finishFragment(lastFragment)
             fragmentStack.clear()
         }
@@ -2529,7 +2560,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             -1
         while (start != end) {
             val currentScreen = fragmentStack[start]
-            removingFragment++
+            removingFragmentInAnimation++
             if (currentScreen.groupId == -2) {
                 (parentActivity.supportFragmentManager.findFragmentByTag("Sheet") as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
                 fragmentStack.removeAt(start)
@@ -2561,14 +2592,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         cancelSlide = true
         if (synchronized) {
             stackRunnable {
-                removingFragment = 0
+                removingFragmentInAnimation = 0
                 while (fragmentStack.size != 0) {
                     removeScreenFromStack(fragmentStack.size - 1, true)
                 }
             }
             runStackedRunnable()
         } else {
-            removingFragment = 0
+            removingFragmentInAnimation = 0
             while (fragmentStack.size != 0) {
                 removeScreenFromStack(fragmentStack.size - 1, true)
             }
@@ -2591,7 +2622,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             fragment.pause()
         fragment.onFragmentDestroy()
         fragment.parentLayout = null
-        fragmentStack.remove(fragment)
+        if (fragmentStack.remove(fragment) && removingFragmentInAnimation != 0)
+            removingFragmentInAnimation --
         if (fragment.groupId != -2 && updateGroupId)
             currentGroupId = if (fragmentStack.size >= 1) {
                 fragmentStack[fragmentStack.size - 1].onGetFirstInStack()
@@ -2695,8 +2727,16 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     fun onOrientationChanged() {
         if (fragmentStack.isNotEmpty()) {
-            fragmentStack.toList().forEach {
-                it.onOrientationChanged()
+            var cont = true
+            val _fragments = fragmentStack.toList()
+            val size = _fragments.size
+            for (i in size - 1 downTo 0) {
+                val fragment = _fragments[i]
+                fragment.onOrientationChanged()
+                if (cont && fragment.groupId == -2)
+                    fragment.finishFragment(false, false)
+                else
+                    cont = false
             }
             if (fragmentStack.size > 1) {
                 val preScreen = fragmentStack[fragmentStack.size - 2]
@@ -2763,14 +2803,17 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     fun onBackPressed(): Boolean {
         if (fragmentStack.isEmpty())
             return false
-        val lastFragment: Fragment = fragmentStack[fragmentStack.size - 1]
-        if (!lastFragment.onBackPressed()) {
-            if (fragmentStack.isNotEmpty()) {
-                if (fragmentStack.size == 1)
-                    return false
-                closeLastFragment(true)
-                return fragmentStack.isNotEmpty()
-            }
+        if (!inAnimation && !startedTracking && frameAnimationFinishRunnable.size == 0) {
+            val lastFragment: Fragment = fragmentStack[fragmentStack.size - 1]
+            if (!lastFragment.onBackPressed()) {
+                if (fragmentStack.isNotEmpty()) {
+                    if (fragmentStack.size == 1)
+                        return false
+                    closeLastFragment(true)
+                    return fragmentStack.isNotEmpty()
+                }
+            } else
+                return true
         } else
             return true
         return false
@@ -2819,7 +2862,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     fun removingFragment() {
-        removingFragment++
+        removingFragmentInAnimation++
     }
 
 

@@ -148,6 +148,7 @@ public class Bulletin {
                 hide();
             }
         };
+        this.parentLayout.setFitsSystemWindows(true);
         this.containerLayout = containerLayout;
         this.duration = duration;
     }

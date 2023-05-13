@@ -41,7 +41,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         const val ITEM_OVER_FLOW = -7
 
         fun getCurrentActionBarHeight(): Int {
-            return if (AndroidUtilities.isTablet) {
+            return if (AndroidUtilities.isTablet()) {
                 dp(64)
             } else if (AndroidUtilities.displaySize.x > AndroidUtilities.displaySize.y) {
                 dp(48)

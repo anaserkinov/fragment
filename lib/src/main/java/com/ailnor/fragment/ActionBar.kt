@@ -261,7 +261,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         if (contentView != null)
             removeView(contentView)
         contentView = view
-        addView(contentView, if (navigationView == null) 0 else 1)
+        addView(contentView, (if (navigationView == null) 0 else 1) + if (editText == null) 0 else 2)
         return this
     }
 
@@ -493,65 +493,6 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                     (measuredHeight + top + child.measuredHeight) / 2
                 )
                 right = child.left
-            }
-        }
-    }
-
-    @Deprecated("User ActionBar.Builder")
-    fun addMenuItem(
-        itemId: Int,
-        iconRes: Int,
-        titleRes: Int = 0,
-        flags: Int = 0
-    ): LayoutParams {
-        return Builder.init(this)
-            .createItem(itemId, flags)
-            .title(titleRes)
-            .icon(iconRes)
-            .temp_build()
-        val layoutParams = LayoutParams(itemId)
-        layoutParams.title = titleRes
-        layoutParams.icon = iconRes
-        layoutParams.flags = flags
-        if (flags == 0)
-            activeOverflowItems.add(layoutParams)
-        else {
-            val view = layoutParams.getView(context, iconRes != 0)
-            view.setOnClickListener {
-                if (flags and SEARCH == 0)
-                    actionListener.onAction(itemId)
-                else {
-                    searchCloseButton!!.visibility = View.VISIBLE
-                    editText!!.visibility = View.VISIBLE
-                    editText!!.showKeyboard()
-                    searchListener?.onSearchExpanded()
-                }
-            }
-            layoutParams.flags = flags
-            addView(view, childCount - 1, layoutParams)
-
-            if (flags and SEARCH != 0) {
-
-                editText = EditText(context)
-                editText!!.background = null
-                editText!!.visibility = View.GONE
-                editText!!.setTextColor(Theme.black)
-                editText!!.setHintTextColor(Theme.black.alpha(30))
-
-                searchCloseButton = ImageView(context)
-                searchCloseButton!!.setPadding(dp(12))
-                searchCloseButton!!.background = makeCircleRippleDrawable()
-                searchCloseButton!!.setOnClickListener {
-                    editText!!.text.clear()
-                }
-                searchCloseButton!!.setImageDrawable(
-                    R.drawable._ic_cross.coloredDrawable(
-                        Theme.black
-                    )
-                )
-
-                addView(searchCloseButton, 0)
-                addView(editText, 0)
             }
         }
     }

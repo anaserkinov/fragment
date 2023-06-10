@@ -300,6 +300,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         editText!!.visibility = View.GONE
         contentView?.visibility = View.VISIBLE
         searchListener?.onSearchCollapsed()
+        editText!!.text.clear()
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

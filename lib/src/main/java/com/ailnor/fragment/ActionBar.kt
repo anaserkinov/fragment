@@ -5,7 +5,11 @@
 package com.ailnor.fragment
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
+import android.graphics.Typeface
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher

@@ -46,7 +46,7 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
                 getChildAt(0).measure(
                     measureSpec_exactly(width),
                     measureSpec_at_most(
-                        MeasureSpec.getSize(heightMeasureSpec) - dp(16) - usedHeight
+                        MeasureSpec.getSize(heightMeasureSpec) - dp(80) - usedHeight - AndroidUtilities.statusBarHeight
                     )
                 )
 

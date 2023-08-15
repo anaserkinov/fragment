@@ -2337,6 +2337,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
 
     private fun closeLastFragmentInternal(animated: Boolean, openPrevious: Boolean) {
+        if (fragmentStack.size == 0)
+            return
         val _oldFragment = fragmentStack[fragmentStack.size - 1]
         _oldFragment.isFinishing = true
 

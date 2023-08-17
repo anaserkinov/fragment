@@ -297,7 +297,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             false
     }
 
-    private fun closeSearchMode() {
+    fun closeSearchMode() {
         navigationType = tempNavigationType
         searchCloseButton!!.visibility = View.GONE
         editText!!.hideKeyboard()

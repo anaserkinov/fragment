@@ -191,6 +191,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         return savedView!!
     }
 
+    // for views with default false isClickable, make sure you set it true yourself
     protected abstract fun onCreateView(context: Context): View
 
     open fun onViewCreated() {

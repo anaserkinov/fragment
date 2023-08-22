@@ -151,8 +151,9 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
                 }
             } else if (savedView != null) {
                 if (viewLifecycleRegistry.currentState == Lifecycle.State.DESTROYED) {
-                    viewLifecycleOwner = LifecycleOwner {
-                        return@LifecycleOwner viewLifecycleRegistry
+                    viewLifecycleOwner = object: LifecycleOwner{
+                        override val lifecycle: Lifecycle
+                            get() = viewLifecycleRegistry
                     }
                     viewLifecycleRegistry = LifecycleRegistry(viewLifecycleOwner)
                 }
@@ -171,8 +172,9 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     init {
         this.arguments = arguments
-        viewLifecycleOwner = LifecycleOwner {
-            return@LifecycleOwner viewLifecycleRegistry
+        viewLifecycleOwner = object: LifecycleOwner{
+            override val lifecycle: Lifecycle
+                get() = viewLifecycleRegistry
         }
         viewLifecycleRegistry = LifecycleRegistry(viewLifecycleOwner)
 
@@ -181,9 +183,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         fragmentId = AndroidUtilities.generateFragmentId()
     }
 
-    override fun getLifecycle(): Lifecycle {
-        return lifecycleRegistry
-    }
+    override val lifecycle: Lifecycle
+        get() = lifecycleRegistry
 
     fun createView(context: Context): View {
         savedView = onCreateView(context)

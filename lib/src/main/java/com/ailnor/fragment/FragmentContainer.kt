@@ -85,6 +85,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             var height = 0
             var actionBarHeight = 0
 
+            var topInset = 0
+
             for (i in 0 until childCount) {
                 val child = getChildAt(i)
                 if (child is ActionBar) {
@@ -108,6 +110,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 //                                (actionBarHeight + AndroidUtilities.statusBarHeight)
 //                        )
 //                    )
+                    topInset = if (child.fitsSystemWindows || actionBarHeight != 0)
+                        0
+                    else
+                        AndroidUtilities.statusBarHeight
 
                     measureChildWithMargins(
                         child,
@@ -117,18 +123,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         (if (i >= 1 + if (actionBarHeight != 0) 1 else 0)
                             0
                         else
-                            actionBarHeight) +
-                                if (child.fitsSystemWindows || actionBarHeight != 0)
-                                    0
-                                else
-                                    AndroidUtilities.statusBarHeight
+                            actionBarHeight) + topInset
                     )
                     height = child.measuredHeight
                 }
             }
 
             setMeasuredDimension(
-                width, height + actionBarHeight
+                width, height + actionBarHeight + topInset
             )
         }
 

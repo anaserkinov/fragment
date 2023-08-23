@@ -558,7 +558,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     @CallSuper
-    protected open fun onOptionsItemSelected(menuId: Int): Boolean {
+    open fun onOptionsItemSelected(menuId: Int): Boolean {
         return false
     }
 

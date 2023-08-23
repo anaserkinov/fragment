@@ -246,7 +246,10 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             contentView.textSize = 20f
             contentView.setTextColor(color)
             contentView.setTypeface(contentView.typeface, Typeface.BOLD)
-            contentView.setPadding(dp(4), 0, dp(4), 0)
+            if (navigationType == NONE)
+                contentView.setPadding(dp(8), 0, dp(4), 0)
+            else
+                contentView.setPadding(dp(4), 0, dp(4), 0)
             contentView.maxLines = 1
             contentView.ellipsize = TextUtils.TruncateAt.END
             contentWithMargin = true
@@ -519,9 +522,9 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
         var current = firstActionIndex + 1
         val last = childCount
-        while (current != last){
+        while (current != last) {
             removeViewAt(current)
-            current ++
+            current++
         }
     }
 

@@ -90,7 +90,7 @@ dependencies {
 
     implementation project(':libs:android-core:lib')
 
-    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.6.1"
+//    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.6.1"
 
     implementation 'com.airbnb.android:lottie:5.2.0'
 }

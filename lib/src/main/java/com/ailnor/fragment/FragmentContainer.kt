@@ -2162,6 +2162,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         fullScreen: Boolean = false,
         height: Int = MATCH_PARENT
     ) {
+        cancelSlide = true
+        AndroidUtilities.runOnUIThread({
+            cancelSlide = false
+        }, 500)
         fragment.parentLayout = this
         fragment.groupId = -2
         fragment.parentFragmentId = parentFragmentId

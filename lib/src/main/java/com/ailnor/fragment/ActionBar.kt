@@ -268,10 +268,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         if (contentView != null)
             removeView(contentView)
         contentView = view
-        addView(
-            contentView,
-            (if (navigationView == null) 0 else 1) + if (editText == null) 0 else 2
-        )
+        addView(contentView, (if (navigationView == null) 0 else 1) + if (editText == null) 0 else 2)
         return this
     }
 
@@ -435,10 +432,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 if (contentView!!.fitsSystemWindows)
                     max(getCurrentActionBarHeight(), contentView!!.measuredHeight)
                 else
-                    AndroidUtilities.statusBarHeight + max(
-                        getCurrentActionBarHeight(),
-                        contentView?.measuredHeight ?: 0
-                    )
+                    AndroidUtilities.statusBarHeight + max(getCurrentActionBarHeight(), contentView?.measuredHeight ?: 0)
             } else
                 AndroidUtilities.statusBarHeight + getCurrentActionBarHeight()
         )
@@ -508,23 +502,6 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 )
                 right = child.left
             }
-        }
-    }
-
-    fun clear() {
-        val firstActionIndex = if (contentView?.visibility == View.VISIBLE)
-            indexOfChild(contentView)
-        else
-            indexOfChild(navigationView)
-
-        activeOverflowItems.clear()
-        invisibleOverflowItems.clear()
-
-        var current = firstActionIndex + 1
-        val last = childCount
-        while (current != last) {
-            removeViewAt(current)
-            current++
         }
     }
 
@@ -776,11 +753,6 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             return this
         }
 
-        fun color(color: Int): Builder {
-            item!!.color = color
-            return this
-        }
-
         fun enabled(enabled: Boolean): Builder {
             item!!.isEnabled = enabled
             return this
@@ -861,8 +833,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             set(value) {
                 field = value
                 if (view is ImageView)
-                    (view as ImageView).colorFilter =
-                        PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN)
+                    (view as ImageView).colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN)
                 else if (view is TextView)
                     (view as TextView).setTextColor(color)
             }

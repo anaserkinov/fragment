@@ -151,10 +151,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
                 }
             } else if (savedView != null) {
                 if (viewLifecycleRegistry.currentState == Lifecycle.State.DESTROYED) {
-                    viewLifecycleOwner = object: LifecycleOwner{
-                        override fun getLifecycle(): Lifecycle {
-                            return viewLifecycleRegistry
-                        }
+                    viewLifecycleOwner = LifecycleOwner {
+                        return@LifecycleOwner viewLifecycleRegistry
                     }
                     viewLifecycleRegistry = LifecycleRegistry(viewLifecycleOwner)
                 }
@@ -173,10 +171,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     init {
         this.arguments = arguments
-        viewLifecycleOwner = object: LifecycleOwner{
-            override fun getLifecycle(): Lifecycle {
-                return viewLifecycleRegistry
-            }
+        viewLifecycleOwner = LifecycleOwner {
+            return@LifecycleOwner viewLifecycleRegistry
         }
         viewLifecycleRegistry = LifecycleRegistry(viewLifecycleOwner)
 
@@ -195,7 +191,6 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         return savedView!!
     }
 
-    // for views with default false isClickable, make sure you set it true yourself
     protected abstract fun onCreateView(context: Context): View
 
     open fun onViewCreated() {
@@ -561,7 +556,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     @CallSuper
-    open fun onOptionsItemSelected(menuId: Int): Boolean {
+    protected open fun onOptionsItemSelected(menuId: Int): Boolean {
         return false
     }
 

@@ -1,0 +1,110 @@
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'maven-publish'
+}
+
+android {
+    compileSdk 32
+
+    defaultConfig {
+        minSdk 21
+        targetSdk 32
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+
+def githubProperties = new Properties()
+try {
+    githubProperties.load(new FileInputStream(rootProject.file("github.properties")))
+} catch (Exception ignored){}
+
+def getVersionName = { ->
+    return "1.0.0"
+}
+
+def getArtifactId = { ->
+    return "core"
+}
+
+publishing {
+    publications {
+        bar(MavenPublication) {
+
+            groupId "${githubProperties['gpr.groupId']}.android"
+            artifactId getArtifactId()
+            version getVersionName()
+            artifact("$buildDir/outputs/aar/lib-release.aar")
+
+            pom.withXml {
+                def dependenciesNode = asNode().appendNode('dependencies')
+                ext.addDependency = { Dependency dep, String scope ->
+                    if (dep.group == null || dep.version == null || dep.name == null || dep.name == "unspecified")
+                        return
+                    final dependencyNode = dependenciesNode.appendNode("dependency")
+                    dependencyNode.appendNode("groupId", dep.group)
+                    dependencyNode.appendNode("artifactId", dep.name)
+                    dependencyNode.appendNode("version", dep.version)
+                    dependencyNode.appendNode("scope", scope)
+                    if (!dep.transitive) {
+                        final exclusionNode = dependencyNode.appendNode('exclusions').appendNode('exclusion')
+                        exclusionNode.appendNode('groupId', '*')
+                        exclusionNode.appendNode('artifactId', '*')
+                    } else if (!dep.properties.excludeRules.empty){
+                        final exclusionNode = dependencyNode.appendNode('exclusions').appendNode('exclusion')
+                        dep.properties.excludeRules.each { ExcludeRule rule ->
+                            exclusionNode.appendNode('groupId', rule.group ?: '*')
+                            exclusionNode.appendNode('artifactId', rule.module ?: '*')
+                        }
+                    }
+                }
+
+                configurations.implementation.getDependencies().each { dep -> addDependency(dep, "runtime") }
+
+//                configurations.implementation.allDependencies.each {
+//                    def dependencyNode = dependenciesNode.appendNode('dependency')
+//                    dependencyNode.appendNode('groupId', it.group)
+//                    dependencyNode.appendNode('artifactId', it.name)
+//                    dependencyNode.appendNode('version', it.version)
+//                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/${githubProperties['gpr.username']}/nfc")
+            credentials {
+                username = githubProperties['gpr.username']
+                password = githubProperties['gpr.key']
+            }
+        }
+    }
+}
+
+
+
+dependencies {
+
+    implementation 'androidx.core:core-ktx:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'com.google.android.material:material:1.5.0'
+}

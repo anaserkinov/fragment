@@ -130,7 +130,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             }
 
             setMeasuredDimension(
-                width, height + actionBarHeight
+                width, height + actionBarHeight + topInset
             )
         }
 

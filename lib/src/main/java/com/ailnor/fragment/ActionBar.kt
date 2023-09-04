@@ -505,6 +505,24 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         }
     }
 
+    fun clear() {
+        val firstActionIndex = if (contentView?.visibility == View.VISIBLE)
+            indexOfChild(contentView)
+        else
+            indexOfChild(navigationView)
+
+        activeOverflowItems.clear()
+        invisibleOverflowItems.clear()
+
+        var current = firstActionIndex + 1
+        val last = childCount
+        while (current != last) {
+            removeViewAt(current)
+            current++
+        }
+    }
+
+
     fun addSearch() {
         editText = EditText(context)
         editText!!.background = null
@@ -745,6 +763,11 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
         fun title(title: Int): Builder {
             item!!.title = title
+            return this
+        }
+
+        fun color(color: Int): Builder {
+            item!!.color = color
             return this
         }
 

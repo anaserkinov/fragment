@@ -15,16 +15,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import androidx.activity.result.ActivityResultCallback
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.ActivityResultRegistry
-import androidx.activity.result.ActivityResultRegistryOwner
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.annotation.CallSuper
-import androidx.annotation.MainThread
-import androidx.arch.core.util.Function
-import androidx.core.app.ActivityOptionsCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -32,17 +25,11 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import com.ailnor.core.AndroidUtilities
 import com.ailnor.core.Theme
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 
 abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     interface LifecycleCallback {
         fun onChange(state: Lifecycle.Event)
-    }
-
-    private abstract class OnPreAttachedListener {
-        abstract fun onPreAttached()
     }
 
     var viewLifecycleOwner: LifecycleOwner
@@ -86,10 +73,6 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     val myIndex: Int
         get() = parentLayout!!.indexOf(this)
 
-    private var mOnPreAttachedListeners: ArrayList<OnPreAttachedListener>? = null
-    private val mNextLocalRequestCode by lazy { AtomicInteger() }
-
-
     fun fragmentsCount() = parentLayout!!.fragmentsCount
     fun fragmentsCountInAnimation() = parentLayout!!.fragmentCountInAnimation
 
@@ -100,10 +83,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         set(value) {
             if (value != field) {
                 field = value
-                if (field != null) {
+                if (field != null)
                     onAttackToContext(context)
-                    mOnPreAttachedListeners?.forEach { it.onPreAttached() }
-                }
                 if (savedView != null) {
                     val parent = savedView!!.parent as? ViewGroup
                     if (parent != null) {
@@ -636,92 +617,6 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
-    }
-
-    @MainThread
-    fun <I, O> registerForActivityResult(
-        contract: ActivityResultContract<I, O>,
-        callback: ActivityResultCallback<O>
-    ): ActivityResultLauncher<I> {
-        return prepareCallInternal(
-            contract,
-            { getParentActivity()!!.activityResultRegistry },
-            callback
-        )
-    }
-
-    @MainThread
-    fun <I, O> registerForActivityResult(
-        contract: ActivityResultContract<I, O>,
-        registry: ActivityResultRegistry,
-        callback: ActivityResultCallback<O>
-    ): ActivityResultLauncher<I> {
-        return prepareCallInternal(
-            contract,
-            { registry },
-            callback
-        )
-    }
-
-    private fun <I, O> prepareCallInternal(
-        contract: ActivityResultContract<I, O>,
-        registryProvider: Function<Void?, ActivityResultRegistry>,
-        callback: ActivityResultCallback<O>
-    ): ActivityResultLauncher<I> {
-        // Throw if attempting to register after the Fragment is CREATED.
-        check(lifecycle.currentState <= Lifecycle.State.CREATED) {
-            ("Fragment " + this + " is attempting to "
-                    + "registerForActivityResult after being created. Fragments must call "
-                    + "registerForActivityResult() before they are created (i.e. initialization, "
-                    + "onAttach(), or onCreate()).")
-        }
-        val ref = AtomicReference<ActivityResultLauncher<I>?>()
-        // We can't call generateActivityResultKey during initialization of the Fragment
-        // since we need to wait for the mWho to be restored from saved instance state
-        // so we'll wait until we have all the information needed to register  to actually
-        // generate the key and register.
-        registerOnPreAttachListener(object : OnPreAttachedListener() {
-            override fun onPreAttached() {
-                val key: String = generateActivityResultKey()
-                val registry = registryProvider.apply(null)
-                ref.set(registry.register(key, this@Fragment, contract, callback))
-            }
-        })
-        return object : ActivityResultLauncher<I>() {
-            override fun launch(input: I, options: ActivityOptionsCompat?) {
-                val delegate = ref.get()
-                    ?: throw IllegalStateException(
-                        "Operation cannot be started before fragment "
-                                + "is in created state"
-                    )
-                delegate.launch(input, options)
-            }
-
-            override fun unregister() {
-                val delegate = ref.getAndSet(null)
-                delegate?.unregister()
-            }
-
-            override fun getContract(): ActivityResultContract<I, *> {
-                return contract
-            }
-        }
-    }
-
-    private fun registerOnPreAttachListener(callback: OnPreAttachedListener) {
-        //If we are already attached, we can register immediately
-        if (parentLayout != null) {
-            callback.onPreAttached()
-        } else {
-            // else we need to wait until we are attached
-            if (mOnPreAttachedListeners == null)
-                mOnPreAttachedListeners = ArrayList()
-            mOnPreAttachedListeners!!.add(callback)
-        }
-    }
-
-    open fun generateActivityResultKey(): String {
-        return "fragment_" + fragmentId + "_rq#" + mNextLocalRequestCode.getAndIncrement()
     }
 
     open fun onGetFirstInStack() {

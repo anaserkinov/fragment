@@ -1207,7 +1207,7 @@ public class Bulletin {
             super(context);
             this.resourcesProvider = resourcesProvider;
 
-            final int undoCancelColor = Theme.red;
+            final int undoCancelColor = Theme.white;
 
             if (text) {
                 undoTextView = new TextView(context);
@@ -1215,8 +1215,8 @@ public class Bulletin {
                 final int leftInset = LocaleController.INSTANCE.isRTL() ? UtilsKt.dp(16) : 0;
                 final int rightInset = LocaleController.INSTANCE.isRTL() ? 0 : UtilsKt.dp(16);
                 undoTextView.setBackground(UtilsKt.createCircleSelectorDrawable((undoCancelColor & 0x00ffffff) | 0x19000000, leftInset, rightInset));
-                undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                undoTextView.setTypeface(AndroidUtilities.INSTANCE.getTypeface("fonts/rmedium.ttf"));
+//                undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                undoTextView.setTypeface(AndroidUtilities.INSTANCE.getTypeface("fonts/roboto_medium.ttf"));
                 undoTextView.setTextColor(undoCancelColor);
                 undoTextView.setText(context.getString(R.string.undo));
                 undoTextView.setGravity(Gravity.CENTER_VERTICAL);

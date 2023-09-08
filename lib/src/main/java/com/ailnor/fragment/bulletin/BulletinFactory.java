@@ -19,6 +19,10 @@ public final class BulletinFactory {
         return new BulletinFactory(fragment);
     }
 
+    public static BulletinFactory of(FrameLayout layout) {
+        return new BulletinFactory(layout);
+    }
+
     public static boolean canShowBulletin(Fragment fragment) {
         return fragment != null && fragment.getParentActivity() != null && fragment.getLayoutContainer() != null;
     }
@@ -59,12 +63,12 @@ public final class BulletinFactory {
     public Bulletin createSimpleBulletin(int iconRawId, CharSequence text, CharSequence button, Runnable onButtonClick) {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext());
         layout.setAnimation(iconRawId, dp(36), dp(36));
-        layout.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, dp(14));
+//        layout.textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, dp(14));
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(3);
         layout.textView.setText(text);
         layout.setButton(new Bulletin.UndoButton(getContext(), true).setText(button).setUndoAction(onButtonClick));
-        return create(layout, Bulletin.DURATION_SHORT);
+        return create(layout, Bulletin.DURATION_LONG);
     }
 
     public Bulletin createSimpleBulletin(Drawable drawable, CharSequence text, String button, Runnable onButtonClick) {
@@ -82,7 +86,7 @@ public final class BulletinFactory {
         final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext());
         layout.setAnimation(R.raw.copy, dp(36), dp(36), "NULL ROTATION", "Back", "Front");
         layout.textView.setText(message);
-        return create(layout, Bulletin.DURATION_SHORT);
+        return create(layout, Bulletin.DURATION_LONG);
     }
 
     public Bulletin createErrorBulletin(CharSequence errorMessage) {

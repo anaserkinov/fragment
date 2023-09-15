@@ -1201,7 +1201,31 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         //region RIGHT
         fun replaceRight(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
-            startReplaceAnimation(view, actionBar)
+            if (forceWithoutAnimation) {
+                removingFragmentInAnimation++
+                if (frame == null)
+                    frame = Container(context)
+                frame!!.updateParams(0.65f, 0f)
+                frame!!.setView(view, newFragment!!.backgroundColor)
+                if (actionBar != null)
+                    frame!!.addView(actionBar)
+                addView(frame)
+                newFragment!!.actionBar?.drawableRotation = 1f
+                newFragment!!.onPreResume()
+                oldFragment!!.onPrePause()
+
+                val temp = rightFrame
+                rightFrame = frame!!
+                frame = temp
+                removeViewInLayout(frame!!)
+                requestLayout()
+
+                finishFragment(oldFragment!!)
+                oldFragment = null
+                resumeFragment(newFragment!!, true)
+                newFragment = null
+            } else
+                startReplaceAnimation(view, actionBar)
         }
 
         private fun startReplaceAnimation(view: View, actionBar: ActionBar?) {
@@ -1215,7 +1239,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             frame!!.updateParams(0.65f, measuredWidth.toFloat())
             frame!!.setView(view, newFragment!!.backgroundColor)
             addView(frame)
-            fragmentStack.size
             if (actionBar != null)
                 frame!!.addView(actionBar)
 
@@ -2126,7 +2149,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         } else
             null
 
-        if (oldFragment?.groupId == -2){
+        if (oldFragment?.groupId == -2) {
             oldFragment!!.finishFragment(false, false)
             removeLast = false
             oldFragment = if (fragmentStack.size > 1) {
@@ -2627,7 +2650,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         fragment.onFragmentDestroy()
         fragment.parentLayout = null
         if (fragmentStack.remove(fragment) && removingFragmentInAnimation != 0)
-            removingFragmentInAnimation --
+            removingFragmentInAnimation--
         if (fragment.groupId != -2 && updateGroupId)
             currentGroupId = if (fragmentStack.size >= 1) {
                 fragmentStack[fragmentStack.size - 1].onGetFirstInStack()

@@ -580,7 +580,8 @@ public class Bulletin {
         }
 
         private boolean isWideScreen() {
-            return AndroidUtilities.INSTANCE.isTablet() || AndroidUtilities.INSTANCE.getDisplaySize().x >= AndroidUtilities.INSTANCE.getDisplaySize().y;
+//            return AndroidUtilities.INSTANCE.isTablet() || AndroidUtilities.INSTANCE.getDisplaySize().x >= AndroidUtilities.INSTANCE.getDisplaySize().y;
+            return false;
         }
 
         private void setWideScreenParams(@WidthDef int width, @GravityDef int gravity) {

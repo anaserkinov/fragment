@@ -24,6 +24,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import com.ailnor.core.AndroidUtilities
+import com.ailnor.core.MATCH_PARENT
 import com.ailnor.core.Theme
 
 abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
@@ -43,6 +44,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     var arguments: Bundle? = null
         private set
     private var visibleDialog: Dialog? = null
+
     @set:JvmName("setParentDialogLocal")
     protected var parentDialog: Dialog? = null
 
@@ -151,7 +153,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
                 }
             } else if (savedView != null) {
                 if (viewLifecycleRegistry.currentState == Lifecycle.State.DESTROYED) {
-                    viewLifecycleOwner = object: LifecycleOwner{
+                    viewLifecycleOwner = object : LifecycleOwner {
                         override fun getLifecycle(): Lifecycle {
                             return viewLifecycleRegistry
                         }
@@ -173,7 +175,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     init {
         this.arguments = arguments
-        viewLifecycleOwner = object: LifecycleOwner{
+        viewLifecycleOwner = object : LifecycleOwner {
             override fun getLifecycle(): Lifecycle {
                 return viewLifecycleRegistry
             }
@@ -202,7 +204,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     }
 
-    protected open fun parseArguments(arguments: Bundle){
+    protected open fun parseArguments(arguments: Bundle) {
 
     }
 
@@ -290,7 +292,10 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     open fun onResume() {}
     open fun onPause() {
         try {
-            if (visibleDialog != null && visibleDialog!!.isShowing && dismissDialogOnPause(visibleDialog!!)) {
+            if (visibleDialog != null && visibleDialog!!.isShowing && dismissDialogOnPause(
+                    visibleDialog!!
+                )
+            ) {
                 tempDismiss = true
                 visibleDialog!!.dismiss()
             }
@@ -361,8 +366,14 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false,
         uniqueWith: Int = -1
-    ){
-        parentLayout?.presentFragmentGroup(fragment, fragmentId, removeLast, forceWithoutAnimation, uniqueWith)
+    ) {
+        parentLayout?.presentFragmentGroup(
+            fragment,
+            fragmentId,
+            removeLast,
+            forceWithoutAnimation,
+            uniqueWith
+        )
     }
 
 
@@ -381,14 +392,18 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         parentLayout?.nextFragmentInnerGroup(fragment, fragmentId, forceWithoutAnimation)
     }
 
-    fun presentFragmentAsSheet(fragment: Fragment, fullScreen: Boolean = false) {
-        parentLayout?.presentFragmentAsSheet(fragment, fragmentId, fullScreen)
+    fun presentFragmentAsSheet(
+        fragment: Fragment,
+        fullScreen: Boolean = false,
+        height: Int = MATCH_PARENT
+    ) {
+        parentLayout?.presentFragmentAsSheet(fragment, fragmentId, fullScreen, height)
     }
 
     fun presentFragmentAsPopup(
         fragment: Fragment,
         uniqueWith: Int = -1
-    ): Boolean?{
+    ): Boolean? {
         return parentLayout?.presentFragmentAsPopUp(fragment, uniqueWith)
     }
 
@@ -396,7 +411,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     }
 
-    protected fun sendParent(vararg data: Any?){
+    protected fun sendParent(vararg data: Any?) {
         parentLayout?.send(parentFragmentId, *data)
     }
 
@@ -524,8 +539,11 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
 
-    open fun showAsSheet(fragment: Fragment, fullScreen: Boolean = false): Array<FragmentContainer?>? {
-       return parentLayout?.showAsSheet(fragment, fullScreen)
+    open fun showAsSheet(
+        fragment: Fragment,
+        fullScreen: Boolean = false
+    ): Array<FragmentContainer?>? {
+        return parentLayout?.showAsSheet(fragment, fullScreen)
     }
 
     fun setParentDialog(dialog: Dialog) {

@@ -15,7 +15,11 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.os.Build
-import android.view.*
+import android.view.MotionEvent
+import android.view.VelocityTracker
+import android.view.View
+import android.view.ViewGroup
+import android.view.WindowInsets
 import android.view.animation.Animation
 import android.view.animation.Transformation
 import android.widget.FrameLayout
@@ -23,7 +27,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.math.MathUtils
 import androidx.core.view.children
-import com.ailnor.core.*
+import com.ailnor.core.AndroidUtilities
+import com.ailnor.core.MATCH_PARENT
+import com.ailnor.core.dp
+import com.ailnor.core.drawable
+import com.ailnor.core.hideKeyboard
+import com.ailnor.core.measureSpec_exactly
+import com.ailnor.core.measureSpec_unspecified
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlin.math.abs
 import kotlin.math.max
@@ -1327,6 +1337,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     val fragmentCountInAnimation: Int
         get() = fragmentStack.size - removingFragmentInAnimation
     var clearable = false
+    private var resumed = false
 
     private var oldFragment: Fragment? = null
     private var newFragment: Fragment? = null
@@ -1887,30 +1898,33 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         drawShadow = fragment.isPopup
 
-        var screenView = fragment.savedView
-        if (screenView != null) {
-            val parent = screenView.parent as? ViewGroup
+        var fragmentView = fragment.savedView
+        if (fragmentView != null) {
+            val parent = fragmentView.parent as? ViewGroup
             if (parent != null) {
                 fragment.onRemoveFromParent()
-                parent.removeView(screenView)
+                parent.removeView(fragmentView)
             }
         } else
-            screenView = fragment.createView(context)
+            fragmentView = fragment.createView(context)
 
         if (fragment.isDialog) {
             fragmentStack.add(fragment)
-            containerView.addDialog(screenView, 0)
-        } else {
+            containerView.addDialog(fragmentView, 0)
+            fragment.onPreResume()
+            resumeFragment(fragment, true)
+        } else
+        {
             if (fragment.actionBar != null && fragment.requiredActionBar.shouldAddToContainer) {
                 val parent = fragment.requiredActionBar.parent as? ViewGroup
                 parent?.removeView(fragment.actionBar)
                 containerViewBack.addGroup(
-                    screenView,
+                    fragmentView,
                     fragment.requiredActionBar,
                     fragment.backgroundColor
                 )
             } else
-                containerViewBack.addGroup(screenView, null, fragment.backgroundColor)
+                containerViewBack.addGroup(fragmentView, null, fragment.backgroundColor)
 
 
             fragmentStack.add(fragment)
@@ -2277,15 +2291,16 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         return addFragmentToStack(fragment, newGroup, -1)
     }
 
-    fun addFragmentToStack(screen: Fragment, newGroup: Boolean, position: Int): Boolean {
-        if (!screen.onFragmentCreate()) {
+    fun addFragmentToStack(fragment: Fragment, newGroup: Boolean, position: Int): Boolean {
+        if (!fragment.onFragmentCreate()) {
             return false
         }
         if (newGroup)
             currentGroupId++
-        screen.groupId = currentGroupId
-        screen.parentLayout = this
-        if (position == -1) {
+        fragment.groupId = currentGroupId
+        fragment.parentLayout = this
+
+        if (position == -1 || position == fragmentStack.size) {
             if (fragmentStack.isNotEmpty()) {
                 val previousFragment: Fragment = fragmentStack[fragmentStack.size - 1]
                 previousFragment.pause()
@@ -2301,10 +2316,25 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     }
                 }
             }
-            fragmentStack.add(screen)
-        } else {
-            fragmentStack.add(position, screen)
+
+            val screenView = fragment.savedView
+            if (screenView != null) {
+                val parent = screenView.parent as? ViewGroup
+                if (parent != null) {
+                    fragment.onRemoveFromParent()
+                    parent.removeView(screenView)
+                }
+            } else
+                 fragment.createView(context)
+
         }
+
+        if (position == -1) {
+            fragmentStack.add(fragment)
+        } else {
+            fragmentStack.add(position, fragment)
+        }
+
         return true
     }
 
@@ -2745,11 +2775,13 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     fun onResume() {
+        resumed = true
         if (fragmentStack.isNotEmpty())
             fragmentStack[fragmentStack.size - 1].resume()
     }
 
     fun onPause() {
+        resumed = false
         if (fragmentStack.isNotEmpty())
             fragmentStack[fragmentStack.size - 1].pause()
     }

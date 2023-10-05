@@ -623,10 +623,10 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         ) == PackageManager.PERMISSION_GRANTED
 
 
-    fun requestPermissions(
+    open fun requestPermissions(
         permissions: Array<out String>, requestCode: Int
     ) {
-        parentLayout?.requestPermissions(permissions, 10_000 + requestCode)
+        parentLayout?.requestPermissions(permissions, requestCode)
     }
 
     open fun onRequestPermissionsResult(

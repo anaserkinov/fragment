@@ -17,7 +17,6 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.CallSuper
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -627,7 +626,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     fun requestPermissions(
         permissions: Array<out String>, requestCode: Int
     ) {
-        parentLayout?.requestPermissions(permissions, requestCode)
+        parentLayout?.requestPermissions(permissions, 10_000 + requestCode)
     }
 
     open fun onRequestPermissionsResult(

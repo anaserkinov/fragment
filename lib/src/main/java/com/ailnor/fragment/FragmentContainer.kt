@@ -2859,7 +2859,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     ) {
         if (grantResults.isNotEmpty())
             fragmentStack.forEach {
-                it.onRequestPermissionsResult(requestCode, permissions, grantResults)
+                it.onRequestPermissionsResult(requestCode - 10_000, permissions, grantResults)
             }
     }
 

@@ -2651,14 +2651,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             stackRunnable {
                 removingFragmentInAnimation = 0
                 while (fragmentStack.size != 0) {
-                    removeScreenFromStack(fragmentStack.size - 1, true)
+                    removeScreenFromStack(fragmentStack.size - 1, false)
                 }
             }
             runStackedRunnable()
         } else {
             removingFragmentInAnimation = 0
             while (fragmentStack.size != 0) {
-                removeScreenFromStack(fragmentStack.size - 1, true)
+                removeScreenFromStack(fragmentStack.size - 1, false)
             }
         }
     }

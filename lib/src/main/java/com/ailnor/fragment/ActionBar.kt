@@ -13,6 +13,7 @@ import android.graphics.Typeface
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -235,22 +236,29 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         return Builder.init(this)
     }
 
-    fun setTitle(@StringRes res: Int): ActionBar {
-        setTitle(context.getString(res))
-        return this
+    fun setTitle(
+        @StringRes res: Int,
+        maxLines: Int = 1,
+        textSize: Float = 21f
+    ): ActionBar {
+        return setTitle(context.getString(res), maxLines, textSize)
     }
 
-    fun setTitle(title: CharSequence?): ActionBar {
+    fun setTitle(
+        title: CharSequence?,
+        maxLines: Int = 1,
+        textSize: Float = 21f
+    ): ActionBar {
         if (contentView == null) {
             val contentView = TextView(context)
-            contentView.textSize = 20f
+            contentView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSize)
             contentView.setTextColor(color)
             contentView.setTypeface(contentView.typeface, Typeface.BOLD)
             if (navigationType == NONE)
                 contentView.setPadding(dp(8), 0, dp(4), 0)
             else
                 contentView.setPadding(dp(4), 0, dp(4), 0)
-            contentView.maxLines = 1
+            contentView.maxLines = maxLines
             contentView.ellipsize = TextUtils.TruncateAt.END
             contentWithMargin = true
             this.contentView = contentView

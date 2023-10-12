@@ -1387,14 +1387,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     }
 
-    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
-        return isSlideFinishing || onTouchEvent(ev)
-    }
-
-    override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
-        onTouchEvent(null)
-        super.requestDisallowInterceptTouchEvent(disallowIntercept)
-    }
 
     private fun prepareForMoving(x: Float) {
         maybeStartedTracking = false
@@ -1503,6 +1495,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         innerTranslationX = 0f
     }
 
+    override fun onInterceptTouchEvent(ev: MotionEvent?): Boolean {
+        return isSlideFinishing || onTouchEvent(ev)
+    }
+
+    override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
+        onTouchEvent(null)
+        super.requestDisallowInterceptTouchEvent(disallowIntercept)
+    }
 
     override fun onTouchEvent(ev: MotionEvent?): Boolean {
         if (!isSlideFinishing && inAnimation == touching) {

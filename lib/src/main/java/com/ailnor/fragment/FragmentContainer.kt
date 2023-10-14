@@ -2681,7 +2681,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         fragment.parentLayout = null
         if (fragmentStack.remove(fragment) && removingFragmentInAnimation != 0)
             removingFragmentInAnimation--
-        if (fragment.groupId != -2 && updateGroupId)
+        if (updateGroupId)
             currentGroupId = if (fragmentStack.size >= 1) {
                 fragmentStack[fragmentStack.size - 1].onGetFirstInStack()
                 fragmentStack[fragmentStack.size - 1].groupId

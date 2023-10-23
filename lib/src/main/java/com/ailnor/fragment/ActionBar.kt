@@ -251,14 +251,12 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
     ): ActionBar {
         if (contentView == null) {
             val contentView = TextView(context)
-            contentView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSize)
             contentView.setTextColor(color)
             contentView.setTypeface(contentView.typeface, Typeface.BOLD)
             if (navigationType == NONE)
                 contentView.setPadding(dp(8), 0, dp(4), 0)
             else
                 contentView.setPadding(dp(4), 0, dp(4), 0)
-            contentView.maxLines = maxLines
             contentView.ellipsize = TextUtils.TruncateAt.END
             contentWithMargin = true
             this.contentView = contentView
@@ -267,7 +265,11 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 (if (navigationView == null) 0 else 1) + if (editText == null) 0 else 2
             )
         }
-        (contentView as TextView).text = title
+        (contentView as TextView).let {
+            it.maxLines = maxLines
+            it.setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSize)
+            it.text = title
+        }
         return this
     }
 

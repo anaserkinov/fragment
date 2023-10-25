@@ -5,10 +5,14 @@
 package com.ailnor.fragment
 
 import android.app.Dialog
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.View.OnApplyWindowInsetsListener
 import android.view.ViewGroup
+import android.view.WindowInsets
+import android.view.WindowManager
 import androidx.lifecycle.Lifecycle
 import com.ailnor.core.AndroidUtilities
 import com.ailnor.core.MATCH_PARENT
@@ -26,6 +30,10 @@ class BottomSheet2(
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = BottomSheetDialog(requireContext(), theme)
         screen?.dialog = dialog
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R){
+//            dialog.window?.setDecorFitsSystemWindows(true)
+//        }
+//        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         dialog.setOnShowListener {
             (it as BottomSheetDialog).findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
                 ?.let { view ->
@@ -57,7 +65,21 @@ class BottomSheet2(
             dismissAllowingStateLoss()
             return null
         }
-        return screen.createView(requireContext())
+        return screen.createView(requireContext()).also {
+//            it.setOnApplyWindowInsetsListener(object: OnApplyWindowInsetsListener{
+//                override fun onApplyWindowInsets(v: View?, insets: WindowInsets): WindowInsets {
+//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R){
+//                        it.setPadding(
+//                            it.paddingLeft,
+//                            it.paddingTop,
+//                            it.paddingRight,
+//                            it.paddingBottom + insets.getInsets(WindowInsets.Type.ime()).bottom
+//                        )
+//                    }
+//                    return insets
+//                }
+//            })
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

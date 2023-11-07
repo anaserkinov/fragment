@@ -1582,7 +1582,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         if (!startedTracking && currentFragment.isSwipeBackEnabled(ev)) {
                             val velX = velocityTracker!!.xVelocity
                             val velY = velocityTracker!!.yVelocity
-                            if (velX >= 3500 && velX > abs(velY) && currentFragment.canBeginSlide()) {
+                            if (velX >= 3500 && velX > abs(velY) && currentFragment.canBeginSlide() && findScrollingChild(
+                                    this,
+                                    ev.x,
+                                    ev.y
+                                ) == null) {
                                 prepareForMoving(ev.x)
                                 inAnimation = false
                                 if (!beginTrackingSent) {

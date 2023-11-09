@@ -2838,7 +2838,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     fun startActivityForResult(
-        intent: Intent?,
+        intent: Intent,
         requestCode: Int
     ) {
         parentActivity.startActivityForResult(intent, requestCode)

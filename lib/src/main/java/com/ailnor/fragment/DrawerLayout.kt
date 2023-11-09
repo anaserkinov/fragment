@@ -214,7 +214,7 @@ class DrawerLayout(context: Context) : ViewGroup(context) {
                                     ).setDuration(duration)
                                 )
                             animatorSet.addListener(object : AnimatorListenerAdapter() {
-                                override fun onAnimationEnd(animation: Animator?) {
+                                override fun onAnimationEnd(animation: Animator) {
                                     onSlideAnimationEnd(backAnimation)
                                 }
                             })

@@ -1669,7 +1669,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                     innerTranslationXAnimation
                                 )
                                 animatorSet.addListener(object : AnimatorListenerAdapter() {
-                                    override fun onAnimationEnd(animation: Animator?) {
+                                    override fun onAnimationEnd(animation: Animator) {
                                         onSlideAnimationEnd(backAnimation)
                                     }
                                 })
@@ -1999,11 +1999,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     fragmentStack[fragmentStack.size - 2].onPrePause()
 
                 currentAnimationSet!!.addListener(object : Animator.AnimatorListener {
-                    override fun onAnimationStart(animation: Animator?) {
+                    override fun onAnimationStart(animation: Animator) {
 
                     }
 
-                    override fun onAnimationEnd(animation: Animator?) {
+                    override fun onAnimationEnd(animation: Animator) {
                         if (fragmentStack.size > 1) {
                             val oldFragment = fragmentStack[fragmentStack.size - 2]
                             val oldFragment2 = if (fragmentStack.size > 2) {
@@ -2037,11 +2037,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         runStackedRunnable()
                     }
 
-                    override fun onAnimationCancel(animation: Animator?) {
+                    override fun onAnimationCancel(animation: Animator) {
 
                     }
 
-                    override fun onAnimationRepeat(animation: Animator?) {
+                    override fun onAnimationRepeat(animation: Animator) {
 
                     }
 
@@ -2559,10 +2559,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     onAnimationProgressChanged(it.animatedFraction, false)
                 }
                 currentAnimationSet!!.addListener(object : Animator.AnimatorListener {
-                    override fun onAnimationStart(animation: Animator?) {
+                    override fun onAnimationStart(animation: Animator) {
                     }
 
-                    override fun onAnimationEnd(animation: Animator?) {
+                    override fun onAnimationEnd(animation: Animator) {
                         containerViewBack.visibility = View.GONE
                         bringChildToFront(containerView)
                         if (_newFragment != null)
@@ -2577,11 +2577,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         runStackedRunnable()
                     }
 
-                    override fun onAnimationCancel(animation: Animator?) {
+                    override fun onAnimationCancel(animation: Animator) {
 
                     }
 
-                    override fun onAnimationRepeat(animation: Animator?) {
+                    override fun onAnimationRepeat(animation: Animator) {
 
                     }
 

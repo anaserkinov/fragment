@@ -474,7 +474,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 //        if (actionBar != null && actionBar.isActionModeShowed()) {
 //            key = Theme.key_actionBarActionModeDefault
 //        }
-//        color = Theme.getColor(key!!, null, true)
+//        color = BitoTheme.getColor(key!!, null, true)
 //        return ColorUtils.calculateLuminance(color) > 0.7f
     }
 

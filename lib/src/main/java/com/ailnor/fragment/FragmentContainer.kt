@@ -1917,8 +1917,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             containerView.addDialog(fragmentView, 0)
             fragment.onPreResume()
             resumeFragment(fragment, true)
-        } else
-        {
+        } else {
             if (fragment.actionBar != null && fragment.requiredActionBar.shouldAddToContainer) {
                 val parent = fragment.requiredActionBar.parent as? ViewGroup
                 parent?.removeView(fragment.actionBar)
@@ -1957,9 +1956,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         null
                     if (removeLast) {
                         removingFragmentInAnimation++
-                        if (oldFragment.groupId == -2)
-                            (parentActivity.supportFragmentManager.findFragmentByTag(oldFragment.fragmentId.toString()) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
-                        else
+                        if (oldFragment.groupId == -2) {
+                            fragmentStack.forEach {
+                                if (it.groupId == -2)
+                                    (parentActivity.supportFragmentManager.findFragmentByTag(
+                                        it.fragmentId.toString()
+                                    ) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
+                            }
+                        } else
                             finishFragment(oldFragment)
                     } else
                         pauseFragment(oldFragment, !fragment.isPopup)
@@ -2013,9 +2017,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             if (removeLast) {
                                 removingFragmentInAnimation++
                                 if (oldFragment.groupId == -2)
-                                    (parentActivity.supportFragmentManager.findFragmentByTag(
-                                        oldFragment.fragmentId.toString()
-                                    ) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
+                                    fragmentStack.forEach {
+                                        if (it.groupId == -2)
+                                            (parentActivity.supportFragmentManager.findFragmentByTag(
+                                                it.fragmentId.toString()
+                                            ) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
+                                    }
                                 else
                                     finishFragment(oldFragment)
                             } else
@@ -2329,7 +2336,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     parent.removeView(screenView)
                 }
             } else
-                 fragment.createView(context)
+                fragment.createView(context)
 
         }
 

@@ -7,7 +7,7 @@ plugins {
 android {
     namespace "com.ailnor.fragment"
 
-    compileSdkVersion 31
+    compileSdk 34
 
     defaultConfig {
         minSdkVersion 21

@@ -2770,6 +2770,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 //        }
 //    }
 
+    fun sendFirst(vararg data: Any?) {
+        if (fragmentStack.size > 0)
+            fragmentStack[fragmentStack.size - 1].onReceive(*data)
+    }
 
     fun send(fragmentId: Int, vararg data: Any?) {
         fragmentStack.find {
@@ -2780,11 +2784,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     fun send(toRight: Boolean, vararg data: Any?) {
         if (fragmentStack.size >= 2)
             fragmentStack[fragmentStack.size - if (toRight) 1 else 2].onReceive(*data)
-    }
-
-    fun send(vararg data: Any?) {
-        if (fragmentStack.size > 0)
-            fragmentStack[fragmentStack.size - 1].onReceive(*data)
     }
 
     fun onResume() {

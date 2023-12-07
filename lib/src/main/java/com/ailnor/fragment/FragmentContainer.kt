@@ -2686,10 +2686,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     private fun removeScreenFromStackInternal(fragment: Fragment, updateGroupId: Boolean) {
-        if (fragment.groupId != -2)
+        if (fragment.groupId != -2) {
             fragment.pause()
-        fragment.onFragmentDestroy()
-        fragment.parentLayout = null
+            fragment.onFragmentDestroy()
+            fragment.parentLayout = null
+        } else
+            (parentActivity.supportFragmentManager.findFragmentByTag("Sheet") as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
         if (fragmentStack.remove(fragment) && removingFragmentInAnimation != 0)
             removingFragmentInAnimation--
         if (updateGroupId)
@@ -2768,6 +2770,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 //        }
 //    }
 
+    fun sendFirst(vararg data: Any?) {
+        if (fragmentStack.size > 0)
+            fragmentStack[fragmentStack.size - 1].onReceive(*data)
+    }
 
     fun send(fragmentId: Int, vararg data: Any?) {
         fragmentStack.find {
@@ -2778,11 +2784,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     fun send(toRight: Boolean, vararg data: Any?) {
         if (fragmentStack.size >= 2)
             fragmentStack[fragmentStack.size - if (toRight) 1 else 2].onReceive(*data)
-    }
-
-    fun send(vararg data: Any?) {
-        if (fragmentStack.size > 0)
-            fragmentStack[fragmentStack.size - 1].onReceive(*data)
     }
 
     fun onResume() {

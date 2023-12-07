@@ -35,6 +35,8 @@ import com.ailnor.core.Theme
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
+// TODO It's preferable to invoke the onPause method of the closing fragment before the onResume method of the opening fragment
+
 abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     interface LifecycleCallback {
@@ -319,7 +321,13 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     open fun onPreResume() {}
-    open fun onPrePause() {}
+    open fun onPrePause() {
+        if (viewLifecycleRegistry.currentState != Lifecycle.State.DESTROYED) {
+            viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+            viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        }
+    }
 
     fun resume() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)

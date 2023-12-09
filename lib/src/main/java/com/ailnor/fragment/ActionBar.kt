@@ -69,6 +69,8 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         private set
     private var searchCloseButton: ImageView? = null
     private val overFlowView: BadgeImageView = BadgeImageView(context)
+    private var snowflakesEffect: SnowflakesEffect? = null
+
     private var contentWithMargin = true
 
     var drawableRotation: Float = 0f
@@ -519,6 +521,18 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 right = child.left
             }
         }
+    }
+
+    override fun drawChild(canvas: Canvas, child: View?, drawingTime: Long): Boolean {
+        val result =  super.drawChild(canvas, child, drawingTime)
+
+        if (AndroidUtilities.isHoliday && navigationType == HOME && child == contentView){
+            if (snowflakesEffect == null)
+                snowflakesEffect = SnowflakesEffect(0)
+            snowflakesEffect!!.onDraw(this, canvas)
+        }
+
+        return result
     }
 
     fun clear() {

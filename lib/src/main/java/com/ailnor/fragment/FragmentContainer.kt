@@ -1586,7 +1586,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                     this,
                                     ev.x,
                                     ev.y
-                                ) == null) {
+                                ) == null
+                            ) {
                                 prepareForMoving(ev.x)
                                 inAnimation = false
                                 if (!beginTrackingSent) {
@@ -2686,11 +2687,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     private fun removeScreenFromStackInternal(fragment: Fragment, updateGroupId: Boolean) {
-        if (fragment.groupId != -2) {
-            fragment.pause()
-            fragment.onFragmentDestroy()
-            fragment.parentLayout = null
-        } else
+        fragment.onPrePause()
+        fragment.pause()
+        fragment.onFragmentDestroy()
+        fragment.parentLayout = null
+        if (fragment.groupId == -2)
             (parentActivity.supportFragmentManager.findFragmentByTag("Sheet") as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
         if (fragmentStack.remove(fragment) && removingFragmentInAnimation != 0)
             removingFragmentInAnimation--

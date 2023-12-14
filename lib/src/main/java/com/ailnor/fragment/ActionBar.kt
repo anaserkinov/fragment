@@ -86,6 +86,8 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
     private val activeOverflowItems = arrayListOf<LayoutParams>()
     private val invisibleOverflowItems = arrayListOf<LayoutParams>()
 
+    private var overflowCountWithBadge = 0
+
     var color = Theme.white
         set(value) {
             field = value
@@ -297,6 +299,11 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 it.itemId == itemId
             }
             if (layoutParams != null) {
+                if (isVisible && !layoutParams.showBadge)
+                    overflowCountWithBadge ++
+                else if (!isVisible && layoutParams.showBadge)
+                    overflowCountWithBadge --
+                overFlowView.isShowing = overflowCountWithBadge != 0
                 layoutParams.showBadge = isVisible
                 if (layoutParams.flags == 0)
                     return
@@ -385,7 +392,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                                 layoutParams
                             )
                         )
-                            activeOverflowItems.add(layoutParams)
+                            addToOverFlow(layoutParams)
                         continue
                     }
                     child.measure(measureSpec_unspecified, measureSpec_unspecified)
@@ -401,7 +408,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                                         preChildParams
                                     )
                                 )
-                                    activeOverflowItems.add(preChild.layoutParams as LayoutParams)
+                                    addToOverFlow(preChild.layoutParams as LayoutParams)
                                 leftSpace += preChild.measuredWidth
                                 index++
                             }
@@ -411,13 +418,13 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                         if (layoutParams.flags and SHOW_AS_ACTION_IF_ROOM != 0) {
                             child.visibility = GONE
                             if (!activeOverflowItems.contains(layoutParams))
-                                activeOverflowItems.add(layoutParams)
+                                addToOverFlow(layoutParams)
                         }
                         leftSpace = 0
                     } else {
                         width -= child.measuredWidth
                         child.visibility = VISIBLE
-                        activeOverflowItems.remove(layoutParams)
+                        removeOverFlow(layoutParams)
                     }
                 }
             }
@@ -535,6 +542,20 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         return result
     }
 
+    private fun addToOverFlow(layoutParams: LayoutParams){
+        activeOverflowItems.add(layoutParams)
+        if (layoutParams.showBadge)
+            overflowCountWithBadge ++
+        overFlowView.isShowing = overflowCountWithBadge != 0
+    }
+
+    private fun removeOverFlow(layoutParams: LayoutParams){
+        activeOverflowItems.remove(layoutParams)
+        if (layoutParams.showBadge)
+            overflowCountWithBadge --
+        overFlowView.isShowing = overflowCountWithBadge != 0
+    }
+
     fun clear() {
         val firstActionIndex = if (contentView?.visibility == View.VISIBLE)
             indexOfChild(contentView)
@@ -543,6 +564,8 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
         activeOverflowItems.clear()
         invisibleOverflowItems.clear()
+
+        overflowCountWithBadge = 0
 
         var current = firstActionIndex + 1
         val last = childCount
@@ -590,7 +613,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
     fun addOverFlowItem(layoutParams: LayoutParams) {
         if (layoutParams.isVisible)
-            activeOverflowItems.add(layoutParams)
+            addToOverFlow(layoutParams)
         else
             invisibleOverflowItems.add(layoutParams)
     }
@@ -604,7 +627,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         return if (layoutParams != null) {
             layoutParams.isVisible = isVisible
             if (!isVisible && activeOverflowItems.contains(layoutParams))
-                activeOverflowItems.remove(layoutParams)
+                removeOverFlow(layoutParams)
             requestLayout()
             true
         } else {
@@ -613,12 +636,12 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                     it.itemId == itemId
                 } ?: return false
                 invisibleOverflowItems.remove(layoutParams)
-                activeOverflowItems.add(layoutParams)
+                addToOverFlow(layoutParams)
             } else {
                 layoutParams = activeOverflowItems.find {
                     it.itemId == itemId
                 } ?: return false
-                activeOverflowItems.remove(layoutParams)
+                removeOverFlow(layoutParams)
                 invisibleOverflowItems.add(layoutParams)
             }
             requestLayout()

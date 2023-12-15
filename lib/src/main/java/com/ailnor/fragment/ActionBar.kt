@@ -725,6 +725,25 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             false
     }
 
+    fun setItemTitle(itemId: Int, title: Int): Boolean {
+        var layoutParams = activeOverflowItems.find {
+            it.itemId == itemId
+        }
+        if (layoutParams != null) {
+            layoutParams.title = title
+            if (layoutParams.flags == 0)
+                return true
+        }
+        layoutParams = children.find {
+            it.layoutParams is LayoutParams && (it.layoutParams as LayoutParams).itemId == itemId
+        }?.layoutParams as? LayoutParams
+        return if (layoutParams != null) {
+            layoutParams.title = title
+            true
+        } else
+            false
+    }
+
     class Adapter(context: Context) : ArrayAdapter<LayoutParams>(context, 0, arrayListOf()) {
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
             val item = getItem(position)

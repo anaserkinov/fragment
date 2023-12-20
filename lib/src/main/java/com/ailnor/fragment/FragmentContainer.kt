@@ -1779,6 +1779,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private fun finishFragment(fragment: Fragment) {
         //        fragment.onBecomeFullyHidden()
         fragment.pause()
+        clearViews(fragment)
+        fragment.onFragmentDestroy()
+        fragment.parentLayout = null
+        fragmentStack.remove(fragment)
+        removingFragmentInAnimation--
+    }
+
+    private fun clearViews(fragment: Fragment){
         if (fragment.savedView != null) {
             val parent = fragment.savedView?.parent as? ViewGroup
             if (parent != null) {
@@ -1798,10 +1806,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 actionBarParent?.removeViewInLayout(fragment.actionBar)
             }
         }
-        fragment.onFragmentDestroy()
-        fragment.parentLayout = null
-        fragmentStack.remove(fragment)
-        removingFragmentInAnimation--
     }
 
     fun presentFragmentGroup(
@@ -2689,6 +2693,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private fun removeScreenFromStackInternal(fragment: Fragment, updateGroupId: Boolean) {
         fragment.onPrePause()
         fragment.pause()
+        clearViews(fragment)
         fragment.onFragmentDestroy()
         fragment.parentLayout = null
         if (fragment.groupId == -2)

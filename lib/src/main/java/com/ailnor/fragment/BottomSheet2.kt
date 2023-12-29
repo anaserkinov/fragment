@@ -5,13 +5,10 @@
 package com.ailnor.fragment
 
 import android.app.Dialog
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
-import android.view.View.OnApplyWindowInsetsListener
 import android.view.ViewGroup
-import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.lifecycle.Lifecycle
 import com.ailnor.core.AndroidUtilities
@@ -34,6 +31,7 @@ class BottomSheet2(
 //            dialog.window?.setDecorFitsSystemWindows(true)
 //        }
 //        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        dialog.window?.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
         dialog.setOnShowListener {
             (it as BottomSheetDialog).findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
                 ?.let { view ->

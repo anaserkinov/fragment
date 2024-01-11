@@ -2001,23 +2001,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 fragment.onPreResume()
                 resumeFragment(fragment, true)
             } else {
+                var oldFragment: Fragment? = null
+                var oldFragment2: Fragment? = null
+
                 inAnimation = true
-                if (removeLast && fragmentStack.size > 1) {
-                    val oldFragment = fragmentStack[fragmentStack.size - 2]
-                    if (oldFragment.groupId == -2)
-                        fragmentStack.forEach {
-                            if (it.groupId == -2)
-                                (parentActivity.supportFragmentManager.findFragmentByTag(
-                                    it.fragmentId.toString()
-                                ) as? BottomSheetDialogFragment)?.let {
-                                    removingFragmentInAnimation++
-                                    it.dismissAllowingStateLoss()
-                                }
-                        }
-                    else {
-                        removingFragmentInAnimation++
-                    }
-                }
+
                 containerView.translationX = measuredWidth * 0.3f
                 containerView.alpha = 0f
                 containerView.visibility = VISIBLE
@@ -2037,8 +2025,35 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 }
 
                 fragment.onPreResume()
-                if (fragmentStack.size > 1)
-                    fragmentStack[fragmentStack.size - 2].onPrePause()
+                if (fragmentStack.size > 1) {
+                    oldFragment = fragmentStack[fragmentStack.size - 2]
+                    oldFragment2 = if (fragmentStack.size > 2) {
+                        val f = fragmentStack[fragmentStack.size - 3]
+                        if (f.groupId == oldFragment.groupId)
+                            f
+                        else
+                            null
+                    } else
+                        null
+
+                    if (removeLast) {
+                        if (oldFragment.groupId == -2) {
+                            oldFragment = null
+                            fragmentStack.forEach {
+                                if (it.groupId == -2) {
+                                    (parentActivity.supportFragmentManager.findFragmentByTag(
+                                        it.fragmentId.toString()
+                                    ) as? BottomSheetDialogFragment)?.let {
+                                        removingFragmentInAnimation++
+                                        it.dismissAllowingStateLoss()
+                                    }
+                                }
+                            }
+                        } else {
+                            removingFragmentInAnimation++
+                        }
+                    }
+                }
 
                 currentAnimationSet!!.addListener(object : Animator.AnimatorListener {
                     override fun onAnimationStart(animation: Animator) {
@@ -2046,16 +2061,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     }
 
                     override fun onAnimationEnd(animation: Animator) {
-                        if (fragmentStack.size > 1) {
-                            val oldFragment = fragmentStack[fragmentStack.size - 2]
-                            val oldFragment2 = if (fragmentStack.size > 2) {
-                                val f = fragmentStack[fragmentStack.size - 3]
-                                if (f.groupId == oldFragment.groupId || oldFragment.groupId == -2)
-                                    f
-                                else
-                                    null
-                            } else
-                                null
+                        if (oldFragment != null) {
                             if (removeLast) {
                                 if (oldFragment.groupId != -2) {
                                     oldFragment.pause()

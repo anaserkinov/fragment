@@ -13,8 +13,19 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.setPadding
-import com.ailnor.core.*
+import com.ailnor.core.AndroidUtilities
+import com.ailnor.core.MATCH_PARENT
+import com.ailnor.core.Theme
 import com.ailnor.core.Theme.alpha
+import com.ailnor.core.WRAP_CONTENT
+import com.ailnor.core.createRoundRectDrawable
+import com.ailnor.core.createSimpleSelectorRoundRectDrawable
+import com.ailnor.core.dp
+import com.ailnor.core.frameLayoutParams
+import com.ailnor.core.linearLayoutParams
+import com.ailnor.core.measureSpec_at_most
+import com.ailnor.core.measureSpec_exactly
+import com.ailnor.core.measureSpec_unspecified
 
 open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
 
@@ -77,8 +88,9 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
             linearLayout,
             if (AndroidUtilities.isLandscape)
                 frameLayoutParams(
-                    AndroidUtilities.displaySize.y / 2,
-                    WRAP_CONTENT
+                    AndroidUtilities.displaySize.x / 2,
+                    WRAP_CONTENT,
+                    gravity = Gravity.CENTER
                 )
             else
                 frameLayoutParams(
@@ -98,7 +110,7 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
 
         val layoutParams = linearLayout.layoutParams as FrameLayout.LayoutParams
         if (AndroidUtilities.isLandscape) {
-            layoutParams.width = AndroidUtilities.displaySize.y / 2
+            layoutParams.width = AndroidUtilities.displaySize.x / 2
             layoutParams.leftMargin = 0
             layoutParams.rightMargin = 0
         } else {
@@ -162,7 +174,7 @@ open class DialogFragment(bundle: Bundle? = null) : Fragment(bundle) {
         super.onOrientationChanged()
         val layoutParams = linearLayout.layoutParams as FrameLayout.LayoutParams
         if (AndroidUtilities.isLandscape) {
-            layoutParams.width = AndroidUtilities.displaySize.y / 2
+            layoutParams.width = AndroidUtilities.displaySize.x / 2
             layoutParams.leftMargin = 0
             layoutParams.rightMargin = 0
         } else {

@@ -1963,8 +1963,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 containerView.visibility = View.VISIBLE
                 if (fragmentStack.size > 1) {
                     val oldFragment = fragmentStack[fragmentStack.size - 2]
-                    oldFragment.onPrePause()
-                    val oldFragment2 = if (fragmentStack.size > 2) {
+                    var oldFragment2 = if (fragmentStack.size > 2) {
                         val f = fragmentStack[fragmentStack.size - 3]
                         if (f.groupId == oldFragment.groupId || oldFragment.groupId == -2)
                             f
@@ -1974,6 +1973,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         null
                     if (removeLast) {
                         if (oldFragment.groupId == -2) {
+                            if (oldFragment2?.groupId == -2)
+                                oldFragment2 = null
                             fragmentStack.forEach {
                                 if (it.groupId == -2) {
                                     (parentActivity.supportFragmentManager.findFragmentByTag(
@@ -1986,14 +1987,17 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             }
                         } else {
                             removingFragmentInAnimation++
+                            oldFragment.onPrePause()
                             oldFragment.pause()
                             finishFragment(oldFragment)
                         }
                     } else {
+                        oldFragment.onPrePause()
                         oldFragment.pause()
                         pauseFragment(oldFragment, !fragment.isPopup)
                     }
                     if (oldFragment2 != null) {
+                        oldFragment2.onPrePause()
                         oldFragment2.pause()
                         pauseFragment(oldFragment2, !fragment.isPopup)
                     }
@@ -2029,7 +2033,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     oldFragment = fragmentStack[fragmentStack.size - 2]
                     oldFragment2 = if (fragmentStack.size > 2) {
                         val f = fragmentStack[fragmentStack.size - 3]
-                        if (f.groupId == oldFragment.groupId)
+                        if (f.groupId == oldFragment.groupId || oldFragment.groupId == -2)
                             f
                         else
                             null
@@ -2039,6 +2043,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     if (removeLast) {
                         if (oldFragment.groupId == -2) {
                             oldFragment = null
+                            if (oldFragment2?.groupId == -2)
+                                oldFragment2 = null
                             fragmentStack.forEach {
                                 if (it.groupId == -2) {
                                     (parentActivity.supportFragmentManager.findFragmentByTag(
@@ -2053,6 +2059,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             removingFragmentInAnimation++
                         }
                     }
+                    oldFragment?.onPrePause()
+                    oldFragment2?.onPreResume()
                 }
 
                 currentAnimationSet!!.addListener(object : Animator.AnimatorListener {
@@ -2071,10 +2079,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 oldFragment.pause()
                                 pauseFragment(oldFragment, !fragment.isPopup)
                             }
-                            if (oldFragment2 != null) {
-                                oldFragment2.pause()
-                                pauseFragment(oldFragment2, !fragment.isPopup)
-                            }
+                        }
+                        if (oldFragment2 != null) {
+                            oldFragment2.pause()
+                            pauseFragment(oldFragment2, !fragment.isPopup)
                         }
                         resumeFragment(fragment, true)
                         if (!fragment.isPopup)
@@ -2438,6 +2446,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     // Not completed, always close last fragment in stack !!!
     fun closeFragment(fragmentId: Int, animated: Boolean = true): Boolean {
         cancelSlide = true
+//        val contain = fragmentStack.indexOfFirst { it.fragmentId == fragmentId } != -1
         stackRunnable {
             val fragmentIndex = fragmentStack.indexOfFirst { it.fragmentId == fragmentId }
             if (fragmentIndex == -1)
@@ -2840,6 +2849,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     fun send(toRight: Boolean, vararg data: Any?) {
         if (fragmentStack.size >= 2)
             fragmentStack[fragmentStack.size - if (toRight) 1 else 2].onReceive(*data)
+    }
+
+    fun sendTo(shift: Int, vararg data: Any?) {
+        if (fragmentStack.size + shift in 0 until fragmentStack.size)
+            fragmentStack[fragmentStack.size + shift].onReceive(*data)
     }
 
     fun onResume() {

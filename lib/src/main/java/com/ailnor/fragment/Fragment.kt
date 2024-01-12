@@ -443,6 +443,10 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         parentLayout?.send(toRight, *data)
     }
 
+    protected fun sendTo(shift: Int, vararg data: Any?) {
+        parentLayout?.sendTo(shift, *data)
+    }
+
     open fun saveSelfArgs(args: Bundle?) {}
 
     open fun restoreSelfArgs(args: Bundle?) {}

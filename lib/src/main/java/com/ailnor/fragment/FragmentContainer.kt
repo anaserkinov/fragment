@@ -2709,7 +2709,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     fun popScreensFromStack(count: Int, removeLatest: Boolean) {
         var index = fragmentStack.size - 2
         val lastIndex = index - count
-        if (index > 0)
+        if (index >= 0)
             while (index > lastIndex) {
                 removeScreenFromStack(index, false)
                 index--
@@ -2718,6 +2718,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             closeLastFragment(true)
     }
 
+    fun clearActionStack(){
+        frameAnimationFinishRunnable.clear()
+    }
 
     fun removeAllFragments(synchronized: Boolean = true) {
         cancelSlide = true

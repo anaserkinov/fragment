@@ -82,6 +82,10 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         get() = backDrawable.currentRotation
 
     var drawShadow = true
+        set(value) {
+            field = value
+            (parent as View?)?.invalidate()
+        }
     private var adapter: Adapter? = null
     private val activeOverflowItems = arrayListOf<LayoutParams>()
     private val invisibleOverflowItems = arrayListOf<LayoutParams>()
@@ -300,9 +304,9 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             }
             if (layoutParams != null) {
                 if (isVisible && !layoutParams.showBadge)
-                    overflowCountWithBadge ++
+                    overflowCountWithBadge++
                 else if (!isVisible && layoutParams.showBadge)
-                    overflowCountWithBadge --
+                    overflowCountWithBadge--
                 overFlowView.isShowing = overflowCountWithBadge != 0
                 layoutParams.showBadge = isVisible
                 if (layoutParams.flags == 0)
@@ -323,6 +327,8 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
     }
 
     fun closeSearchMode() {
+        if (tempNavigationType == 0)
+            return
         navigationType = tempNavigationType
         searchCloseButton!!.visibility = View.GONE
         editText!!.hideKeyboard()
@@ -531,9 +537,9 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
     }
 
     override fun drawChild(canvas: Canvas, child: View?, drawingTime: Long): Boolean {
-        val result =  super.drawChild(canvas, child, drawingTime)
+        val result = super.drawChild(canvas, child, drawingTime)
 
-        if (AndroidUtilities.isHoliday && navigationType == HOME && child == contentView){
+        if (AndroidUtilities.isHoliday && navigationType == HOME && child == contentView) {
             if (snowflakesEffect == null)
                 snowflakesEffect = SnowflakesEffect(0)
             snowflakesEffect!!.onDraw(this, canvas)
@@ -542,17 +548,17 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         return result
     }
 
-    private fun addToOverFlow(layoutParams: LayoutParams){
+    private fun addToOverFlow(layoutParams: LayoutParams) {
         activeOverflowItems.add(layoutParams)
         if (layoutParams.showBadge)
-            overflowCountWithBadge ++
+            overflowCountWithBadge++
         overFlowView.isShowing = overflowCountWithBadge != 0
     }
 
-    private fun removeOverFlow(layoutParams: LayoutParams){
+    private fun removeOverFlow(layoutParams: LayoutParams) {
         activeOverflowItems.remove(layoutParams)
         if (layoutParams.showBadge)
-            overflowCountWithBadge --
+            overflowCountWithBadge--
         overFlowView.isShowing = overflowCountWithBadge != 0
     }
 

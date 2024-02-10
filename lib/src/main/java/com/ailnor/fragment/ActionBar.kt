@@ -206,13 +206,17 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         overFlowView.setImageDrawable(overFlow)
         overFlowView.background = makeCircleRippleDrawable()
         overFlowView.setOnClickListener {
-            listPopup
-            adapter!!.clear()
-            adapter!!.addAll(activeOverflowItems)
-            listPopup.width = measureContentWidth()
-            listPopup.show()
+            showPopup()
         }
         addView(overFlowView)
+    }
+
+    private fun showPopup(){
+        listPopup
+        adapter!!.clear()
+        adapter!!.addAll(activeOverflowItems)
+        listPopup.width = measureContentWidth()
+        listPopup.show()
     }
 
     private fun measureContentWidth(): Int {
@@ -553,6 +557,10 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         if (layoutParams.showBadge)
             overflowCountWithBadge++
         overFlowView.isShowing = overflowCountWithBadge != 0
+        if (listPopup.isShowing){
+            listPopup.dismiss()
+            showPopup()
+        }
     }
 
     private fun removeOverFlow(layoutParams: LayoutParams) {
@@ -560,6 +568,10 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         if (layoutParams.showBadge)
             overflowCountWithBadge--
         overFlowView.isShowing = overflowCountWithBadge != 0
+        if (listPopup.isShowing){
+            listPopup.dismiss()
+            showPopup()
+        }
     }
 
     fun clear() {

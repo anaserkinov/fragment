@@ -73,6 +73,8 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
     private var contentWithMargin = true
 
+    var minHeight = -1
+
     var drawableRotation: Float = 0f
         set(value) {
             backDrawable.setRotation(value, false)
@@ -463,8 +465,15 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             if (contentView != null) {
                 if (contentView!!.fitsSystemWindows)
                     max(getCurrentActionBarHeight(), contentView!!.measuredHeight)
-                else
+                else if (fitsSystemWindows)
                     AndroidUtilities.statusBarHeight + max(
+                        getCurrentActionBarHeight(),
+                        contentView?.measuredHeight ?: 0
+                    )
+                else if (minHeight != -1)
+                    minHeight
+                else
+                    max(
                         getCurrentActionBarHeight(),
                         contentView?.measuredHeight ?: 0
                     )
@@ -476,7 +485,10 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         var right = measuredWidth - dp(4)
         var left = dp(4)
-        val top = AndroidUtilities.statusBarHeight
+        val top = if (fitsSystemWindows)
+            AndroidUtilities.statusBarHeight
+        else
+            0
 
         if (navigationView?.visibility == View.VISIBLE) {
             navigationView!!.layout(

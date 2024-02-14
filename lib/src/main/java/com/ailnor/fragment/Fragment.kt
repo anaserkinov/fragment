@@ -295,7 +295,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     open fun createActionBar(context: Context): ActionBar {
-        return ActionBar(context)
+        return ActionBar(context).also { it.fitsSystemWindows = true }
     }
 
     open fun setUpActionBar(actionBar: ActionBar) {

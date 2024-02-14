@@ -73,8 +73,6 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
     private var contentWithMargin = true
 
-    var minHeight = -1
-
     var drawableRotation: Float = 0f
         set(value) {
             backDrawable.setRotation(value, false)
@@ -470,8 +468,6 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                         getCurrentActionBarHeight(),
                         contentView?.measuredHeight ?: 0
                     )
-                else if (minHeight != -1)
-                    minHeight
                 else
                     max(
                         getCurrentActionBarHeight(),

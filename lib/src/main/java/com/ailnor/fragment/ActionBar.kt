@@ -256,7 +256,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         return setTitle(context.getString(res), maxLines, textSize)
     }
 
-    fun setTitle(
+    open fun setTitle(
         title: CharSequence?,
         maxLines: Int = 1,
         textSize: Float = 21f

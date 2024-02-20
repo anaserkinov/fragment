@@ -2840,14 +2840,38 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
     fun onResume() {
         resumed = true
-        if (fragmentStack.isNotEmpty())
-            fragmentStack[fragmentStack.size - 1].resume()
+        if (fragmentStack.isNotEmpty()) {
+            fragmentStack[fragmentStack.size - 1].let {
+                it.resume()
+                if (it.groupId == -2 && fragmentStack.size > 1){
+                    for (i in fragmentStack.size - 2..0){
+                        val fragment = fragmentStack[i]
+                        if (fragment.groupId != -2){
+                            fragment.resume()
+                            return
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun onPause() {
         resumed = false
-        if (fragmentStack.isNotEmpty())
-            fragmentStack[fragmentStack.size - 1].pause()
+        if (fragmentStack.isNotEmpty()) {
+            fragmentStack[fragmentStack.size - 1].let {
+                it.pause()
+                if (it.groupId == -2 && fragmentStack.size > 1){
+                    for (i in fragmentStack.size - 2..0){
+                        val fragment = fragmentStack[i]
+                        if (fragment.groupId != -2){
+                            fragment.pause()
+                            return
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun getFragmentStack(): List<Fragment> = fragmentStack

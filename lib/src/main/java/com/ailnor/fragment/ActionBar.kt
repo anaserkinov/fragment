@@ -940,6 +940,14 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                         else
                             color.alpha(70)
                     )
+                else if (view is ImageView)
+                    (view as ImageView).setColorFilter(
+                        if (field)
+                            color
+                        else
+                            color.alpha(70),
+                        PorterDuff.Mode.SRC_IN
+                    )
             }
         var showBadge = false
             set(value) {

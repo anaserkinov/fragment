@@ -397,12 +397,13 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                         continue
                     }
                     if (leftSpace == 0) {
-                        child.visibility = GONE
                         if (layoutParams.flags and SHOW_AS_ACTION_IF_ROOM != 0 && !activeOverflowItems.contains(
                                 layoutParams
                             )
-                        )
+                        ) {
+                            child.visibility = GONE
                             addToOverFlow(layoutParams)
+                        }
                         continue
                     }
                     child.measure(measureSpec_unspecified, measureSpec_unspecified)

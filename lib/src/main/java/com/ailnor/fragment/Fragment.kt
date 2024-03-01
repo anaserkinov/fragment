@@ -66,8 +66,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     private var tempDismiss = false
 
-    private var isFinished = false
-        set(value) {
+    var isFinished = false
+        private set(value) {
             field = value
             if (field && savedView != null && viewLifecycleOwner.lifecycle.currentState.isAtLeast(
                     Lifecycle.State.CREATED

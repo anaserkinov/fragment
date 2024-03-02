@@ -2773,8 +2773,19 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 pauseFragment(previousFragment, true)
             }
         }
-        val previousFragment = fragmentsStack[i]
+        var previousFragment = fragmentsStack[i]
         previousFragment.parentLayout = this
+        if (previousFragment.groupId == -2){
+            previousFragment.reCreate()
+            (parentActivity.supportFragmentManager.findFragmentByTag(
+                previousFragment.fragmentId.toString()
+            ) as? BottomSheet2)?.dismissAllowingStateLoss()
+            if (i != 0)
+                previousFragment = fragmentsStack[i - 1]
+            else
+                return
+        }
+
         var savedView = previousFragment.savedView
         if (savedView == null) {
             savedView = previousFragment.createView(parentActivity)

@@ -20,8 +20,8 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 
 class BottomSheet2(
     private val screen: Fragment? = null,
-    private val fullScreen: Boolean = false,
-    private val height: Int = MATCH_PARENT
+    val fullScreen: Boolean = false,
+    val height: Int = MATCH_PARENT
 ) : BottomSheetDialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {

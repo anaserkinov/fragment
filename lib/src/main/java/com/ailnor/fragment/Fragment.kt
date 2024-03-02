@@ -279,7 +279,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     open fun onFragmentDestroy() {
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED))
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         savedView = null
         isFinished = true
         lifecycleCallback?.onChange(Lifecycle.Event.ON_DESTROY)

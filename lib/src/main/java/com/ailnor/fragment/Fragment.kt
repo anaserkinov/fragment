@@ -152,10 +152,18 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     var savedView: View? = null
         private set(value) {
             field = value
-            if (value == null)
+            if (value == null) {
                 viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-            else
+            } else {
+                if (viewLifecycleRegistry.currentState == Lifecycle.State.DESTROYED) {
+                    viewLifecycleOwner = object : LifecycleOwner {
+                        override val lifecycle: Lifecycle
+                            get() = viewLifecycleRegistry
+                    }
+                    viewLifecycleRegistry = LifecycleRegistry(viewLifecycleOwner)
+                }
                 viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+            }
         }
     val fragmentView: View
         get() = savedView!!

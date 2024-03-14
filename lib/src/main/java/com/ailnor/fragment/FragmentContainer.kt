@@ -2892,6 +2892,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 if (it.groupId == -2 && fragmentsStack.size > 1){
                     for (i in fragmentsStack.size - 2..0){
                         val fragment = fragmentsStack[i]
+                        fragment.onPrePause()
                         if (fragment.groupId != -2){
                             fragment.pause()
                             return

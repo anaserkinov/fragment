@@ -90,9 +90,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             this.leftOffset = leftOffset
         }
 
-        override fun requestLayout() {
-            super.requestLayout()
-        }
 
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
             val width = MeasureSpec.getSize(widthMeasureSpec)
@@ -226,10 +223,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         init {
             addView(leftFrame)
             addView(rightFrame)
-        }
-
-        override fun requestLayout() {
-            super.requestLayout()
         }
 
         fun addGroup(view: View, actionBar: ActionBar?, backgroundColor: Int) {

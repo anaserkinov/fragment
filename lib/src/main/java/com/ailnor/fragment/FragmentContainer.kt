@@ -90,6 +90,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             this.leftOffset = leftOffset
         }
 
+        override fun requestLayout() {
+            super.requestLayout()
+        }
+
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
             val width = MeasureSpec.getSize(widthMeasureSpec)
             var height = 0
@@ -224,11 +228,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             addView(rightFrame)
         }
 
+        override fun requestLayout() {
+            super.requestLayout()
+        }
+
         fun addGroup(view: View, actionBar: ActionBar?, backgroundColor: Int) {
             rightFrame.updateParams(0f, 0f)
             frame?.updateParams(0f, 0f)
             leftFrame.updateParams(1f, 0f)
-            requestLayout()
             leftFrame.addView(view)
             leftFrame.setBackgroundColor(backgroundColor)
             if (actionBar != null)
@@ -1496,6 +1503,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
         onTouchEvent(null)
         super.requestDisallowInterceptTouchEvent(disallowIntercept)
+    }
+
+    override fun requestLayout() {
+        super.requestLayout()
     }
 
     override fun onTouchEvent(ev: MotionEvent?): Boolean {

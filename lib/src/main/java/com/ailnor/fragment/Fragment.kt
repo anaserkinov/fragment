@@ -398,14 +398,16 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         fragment: Fragment,
         removeLast: Boolean = false,
         forceWithoutAnimation: Boolean = false,
-        uniqueWith: Int = -1
+        uniqueWith: Int = -1,
+        synchronized: Boolean = true
     ) {
         parentLayout?.presentFragmentGroup(
             fragment,
             fragmentId,
             removeLast,
             forceWithoutAnimation,
-            uniqueWith
+            uniqueWith,
+            synchronized
         )
     }
 

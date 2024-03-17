@@ -1498,9 +1498,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         super.requestDisallowInterceptTouchEvent(disallowIntercept)
     }
 
-    override fun requestLayout() {
-        super.requestLayout()
-    }
 
     override fun onTouchEvent(ev: MotionEvent?): Boolean {
         if (!isSlideFinishing && inAnimation == touching) {

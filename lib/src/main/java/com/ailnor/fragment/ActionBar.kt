@@ -383,6 +383,8 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         } else
             inSearchMode = false
 
+        overflowCountWithBadge = 0
+
         if (inSearchMode) {
             for (i in actionStartIndex until childCount)
                 getChildAt(i).visibility = View.GONE
@@ -574,8 +576,11 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
     private fun removeOverFlow(layoutParams: LayoutParams) {
         activeOverflowItems.remove(layoutParams)
-        if (layoutParams.showBadge)
+        if (layoutParams.showBadge) {
             overflowCountWithBadge--
+            if (overflowCountWithBadge < 0)
+                overflowCountWithBadge = 0
+        }
         overFlowView.isShowing = overflowCountWithBadge != 0
         if (listPopup.isShowing){
             listPopup.dismiss()

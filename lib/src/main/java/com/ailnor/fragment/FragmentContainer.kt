@@ -1407,6 +1407,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 leftActionBar = newFragment2.actionBar
                 if (leftActionBar != null && leftActionBar.shouldAddToContainer)
                     (leftActionBar.parent as? ViewGroup)?.removeView(leftActionBar)
+                else
+                    leftActionBar = null
             } else
                 newFragment2 = null
 
@@ -2489,8 +2491,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         if (preScreen.actionBar != null && preScreen.requiredActionBar.shouldAddToContainer) {
                             val parent = preScreen.requiredActionBar.parent as? ViewGroup
                             parent?.removeView(preScreen.actionBar)
-                        }
-                        containerView.previousScreen(preView, preScreen.actionBar, !animated)
+                            containerView.previousScreen(preView, preScreen.actionBar, !animated)
+                        } else
+                            containerView.previousScreen(preView, null, !animated)
                     } else if (_oldFragment.isDialog) {
                         if (oldFragment != null) {
                             oldFragment!!.onPrePause()
@@ -2526,6 +2529,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     leftActionBar = newFragment2!!.actionBar
                     if (leftActionBar != null && leftActionBar.shouldAddToContainer)
                         (leftActionBar.parent as? ViewGroup)?.removeView(leftActionBar)
+                    else
+                        leftActionBar = null
                 }
             }
 

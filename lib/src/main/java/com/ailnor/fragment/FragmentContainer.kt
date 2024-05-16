@@ -669,7 +669,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                         fragmentsStack[fragmentsStack.size - 1].pause()
                                         finishFragment(fragmentsStack[fragmentsStack.size - 1])
                                         fragmentsStack[fragmentsStack.size - 1].onGetFirstInStack()
-                                        resumeFragment(fragmentsStack[fragmentsStack.size - 2], false)
+                                        resumeFragment(
+                                            fragmentsStack[fragmentsStack.size - 2],
+                                            false
+                                        )
                                         inAnimation = false
                                         runStackedRunnable()
                                     }
@@ -2455,6 +2458,36 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             else
                 fragmentsStack.remove(_oldFragment)
             (parentActivity.supportFragmentManager.findFragmentByTag(_oldFragment.fragmentId.toString()) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
+            val offset = if (animated) 1 else 0
+            if (fragmentsStack.size > offset) {
+                val previous = fragmentsStack[fragmentsStack.size - 1 - offset]
+                if (previous.isPaused) {
+                    var view: View? = previous.savedView
+
+                    if (view == null)
+                        view = previous.createView(context)
+                    else
+                        (view.parent as? ViewGroup)?.removeView(view)
+
+                    var rightActionBar = previous.actionBar
+                    if (rightActionBar != null && rightActionBar.shouldAddToContainer)
+                        (rightActionBar.parent as? ViewGroup)?.removeView(rightActionBar)
+                    else
+                        rightActionBar = null
+
+                    previous.onPreResume()
+
+                    containerView.addGroup(
+                        view,
+                        rightActionBar,
+                        previous.backgroundColor
+                    )
+
+                    containerView.translationX = 0f
+                    containerView.alpha = 1f
+                    containerView.visibility = VISIBLE
+                }
+            }
         } else if (fragmentsStack.size != 1 || clearable) {
             val groupRemoved: Boolean
 
@@ -2742,8 +2775,9 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         clearViews(fragment)
         fragment.onFragmentDestroy()
         fragment.parentLayout = null
-        if (fragment.groupId == -2)
+        if (fragment.groupId == -2) {
             (parentActivity.supportFragmentManager.findFragmentByTag(fragment.fragmentId.toString()) as? BottomSheetDialogFragment)?.dismissAllowingStateLoss()
+        }
         if (fragmentsStack.remove(fragment) && removingFragmentInAnimation != 0)
             removingFragmentInAnimation--
         if (updateGroupId)
@@ -2752,6 +2786,14 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 fragmentsStack[fragmentsStack.size - 1].groupId
             } else
                 0
+        if (fragment.groupId == -2) {
+            if (fragmentsStack.size > 0) {
+                val previous = fragmentsStack[fragmentsStack.size - 1]
+                if (previous.isPaused) {
+                    resumeFragment(previous, true)
+                }
+            }
+        }
     }
 
     fun isAddedToStack(fragment: Fragment): Boolean = fragmentsStack.contains(fragment)
@@ -2781,7 +2823,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         }
         var previousFragment = fragmentsStack[i]
         previousFragment.parentLayout = this
-        if (previousFragment.groupId == -2){
+        if (previousFragment.groupId == -2) {
             previousFragment.reCreate()
             (parentActivity.supportFragmentManager.findFragmentByTag(
                 previousFragment.fragmentId.toString()
@@ -2820,7 +2862,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     fun rebuildAllFragmentViews(last: Boolean, showLastAfter: Boolean) {
-        stackRunnable{
+        stackRunnable {
             var size: Int = fragmentsStack.size
             if (!last) {
                 size--
@@ -2877,10 +2919,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (fragmentsStack.isNotEmpty()) {
             fragmentsStack[fragmentsStack.size - 1].let {
                 it.resume()
-                if (it.groupId == -2 && fragmentsStack.size > 1){
-                    for (i in fragmentsStack.size - 2..0){
+                if (it.groupId == -2 && fragmentsStack.size > 1) {
+                    for (i in fragmentsStack.size - 2..0) {
                         val fragment = fragmentsStack[i]
-                        if (fragment.groupId != -2){
+                        if (fragment.groupId != -2) {
                             fragment.resume()
                             return
                         }
@@ -2895,11 +2937,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (fragmentsStack.isNotEmpty()) {
             fragmentsStack[fragmentsStack.size - 1].let {
                 it.pause()
-                if (it.groupId == -2 && fragmentsStack.size > 1){
-                    for (i in fragmentsStack.size - 2..0){
+                if (it.groupId == -2 && fragmentsStack.size > 1) {
+                    for (i in fragmentsStack.size - 2..0) {
                         val fragment = fragmentsStack[i]
                         fragment.onPrePause()
-                        if (fragment.groupId != -2){
+                        if (fragment.groupId != -2) {
                             fragment.pause()
                             return
                         }

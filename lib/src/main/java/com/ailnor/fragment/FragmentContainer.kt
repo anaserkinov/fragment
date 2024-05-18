@@ -1370,11 +1370,12 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 //                hasCutout = cutout != null && cutout.boundingRects.size != 0
 //            }
             invalidate()
-            if (Build.VERSION.SDK_INT >= 30) {
-                return@setOnApplyWindowInsetsListener WindowInsets.CONSUMED
-            } else {
-                return@setOnApplyWindowInsetsListener insets.consumeSystemWindowInsets()
-            }
+//            if (Build.VERSION.SDK_INT >= 30) {
+//                return@setOnApplyWindowInsetsListener WindowInsets.CONSUMED
+//            } else {
+//                return@setOnApplyWindowInsetsListener insets.consumeSystemWindowInsets()
+//            }
+            insets
         }
         systemUiVisibility = SYSTEM_UI_FLAG_LAYOUT_STABLE or SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
 

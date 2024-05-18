@@ -1369,13 +1369,13 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 //                val cutout = insets.displayCutout
 //                hasCutout = cutout != null && cutout.boundingRects.size != 0
 //            }
+            setPadding(0, 0, 0, insets.systemWindowInsetBottom)
             invalidate()
-//            if (Build.VERSION.SDK_INT >= 30) {
-//                return@setOnApplyWindowInsetsListener WindowInsets.CONSUMED
-//            } else {
-//                return@setOnApplyWindowInsetsListener insets.consumeSystemWindowInsets()
-//            }
-            insets
+            if (Build.VERSION.SDK_INT >= 30) {
+                return@setOnApplyWindowInsetsListener WindowInsets.CONSUMED
+            } else {
+                return@setOnApplyWindowInsetsListener insets.consumeSystemWindowInsets()
+            }
         }
         systemUiVisibility = SYSTEM_UI_FLAG_LAYOUT_STABLE or SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
 

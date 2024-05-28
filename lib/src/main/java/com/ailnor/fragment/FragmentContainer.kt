@@ -2791,7 +2791,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (fragment.groupId == -2) {
             if (fragmentsStack.size > 0) {
                 val previous = fragmentsStack[fragmentsStack.size - 1]
-                if (previous.isPaused && previous.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                if (previous.isPaused &&
+                    (previous.viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+                            || previous.viewLifecycleOwner.lifecycle.currentState == Lifecycle.State.DESTROYED)
+                    ) {
                     resumeFragment(previous, true)
                 }
             }

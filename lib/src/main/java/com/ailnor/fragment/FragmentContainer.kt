@@ -27,6 +27,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.math.MathUtils
 import androidx.core.view.children
+import androidx.lifecycle.Lifecycle
 import com.ailnor.core.AndroidUtilities
 import com.ailnor.core.MATCH_PARENT
 import com.ailnor.core.dp
@@ -2790,7 +2791,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         if (fragment.groupId == -2) {
             if (fragmentsStack.size > 0) {
                 val previous = fragmentsStack[fragmentsStack.size - 1]
-                if (previous.isPaused) {
+                if (previous.isPaused && previous.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                     resumeFragment(previous, true)
                 }
             }

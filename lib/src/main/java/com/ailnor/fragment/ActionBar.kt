@@ -10,6 +10,7 @@ import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.Typeface
+import android.os.Build
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -70,6 +71,8 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
     private var searchCloseButton: ImageView? = null
     private val overFlowView: BadgeImageView = BadgeImageView(context)
     private var snowflakesEffect: SnowflakesEffect? = null
+    var occupyStatusBar: Boolean = Build.VERSION.SDK_INT >= 21
+        protected set
 
     private var contentWithMargin = true
 

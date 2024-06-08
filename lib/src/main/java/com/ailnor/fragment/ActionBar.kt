@@ -71,8 +71,10 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
     private var searchCloseButton: ImageView? = null
     private val overFlowView: BadgeImageView = BadgeImageView(context)
     private var snowflakesEffect: SnowflakesEffect? = null
-    var occupyStatusBar: Boolean = Build.VERSION.SDK_INT >= 21
-        protected set
+    private var _occupyStatusBar: Boolean = Build.VERSION.SDK_INT >= 21
+
+    val occupyStatusBar: Boolean
+        get() = _occupyStatusBar
 
     private var contentWithMargin = true
 
@@ -214,7 +216,17 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         addView(overFlowView)
     }
 
-    private fun showPopup(){
+    fun setOccupyStatusBar(value: Boolean) {
+        _occupyStatusBar = value
+        setPadding(
+            0,
+            if (_occupyStatusBar) AndroidUtilities.statusBarHeight else 0,
+            0,
+            0
+        )
+    }
+
+    private fun showPopup() {
         listPopup
         adapter!!.clear()
         adapter!!.addAll(activeOverflowItems)
@@ -571,7 +583,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         if (layoutParams.showBadge)
             overflowCountWithBadge++
         overFlowView.isShowing = overflowCountWithBadge != 0
-        if (listPopup.isShowing){
+        if (listPopup.isShowing) {
             listPopup.dismiss()
             showPopup()
         }
@@ -585,7 +597,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 overflowCountWithBadge = 0
         }
         overFlowView.isShowing = overflowCountWithBadge != 0
-        if (listPopup.isShowing){
+        if (listPopup.isShowing) {
             listPopup.dismiss()
             showPopup()
         }

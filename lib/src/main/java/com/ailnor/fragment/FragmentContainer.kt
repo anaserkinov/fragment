@@ -2794,7 +2794,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 if (previous.isPaused &&
                     (previous.viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
                             || previous.viewLifecycleOwner.lifecycle.currentState == Lifecycle.State.DESTROYED)
-                    ) {
+                ) {
                     resumeFragment(previous, true)
                 }
             }
@@ -2884,7 +2884,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     private fun onAnimationProgressChanged(progress: Float, opening: Boolean) {
-        fragmentsStack[fragmentsStack.size - 1].onTransitionAnimationProgress(opening, progress)
+        if (fragmentsStack.size > 0)
+            fragmentsStack[fragmentsStack.size - 1].onTransitionAnimationProgress(opening, progress)
 //        if (fragmentStack.size > 1)
 //            fragmentStack[fragmentStack.size - 2].onTransitionAnimationProgress(opening, progress)
     }

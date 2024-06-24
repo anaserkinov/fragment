@@ -141,6 +141,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
                     setUpActionBar(requiredActionBar)
                     requiredActionBar.actionListener = object : ActionBar.ActionListener {
                         override fun onAction(action: Int) {
+                            parentLayout?:return
                             onOptionsItemSelected(action)
                         }
                     }

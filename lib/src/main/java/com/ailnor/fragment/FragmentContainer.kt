@@ -2966,7 +2966,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             val size = _fragments.size
             for (i in size - 1 downTo 0) {
                 val fragment = _fragments[i]
-                fragment.onOrientationChanged()
+                if (fragment.savedView != null)
+                    fragment.onOrientationChanged()
                 if (cont && fragment.groupId == -2) {
                     fragment.finishFragment(false, false)
                 } else

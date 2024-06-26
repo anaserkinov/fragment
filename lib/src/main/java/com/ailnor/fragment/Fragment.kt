@@ -341,6 +341,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     fun resume() {
+        if (savedView == null) return
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
         if (!isStarted) {
             isStarted = true

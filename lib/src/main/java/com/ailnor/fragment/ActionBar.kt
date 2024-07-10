@@ -153,6 +153,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
                     override fun afterTextChanged(s: Editable?) {
                         searchListener?.onQueryTextChangeListener(s?.toString())
+                        searchCloseButton?.isVisible = s?.isNotEmpty() == true
                     }
 
                 })
@@ -379,13 +380,18 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         val inSearchMode: Boolean
         if (editText?.visibility == View.VISIBLE) {
 
-            searchCloseButton!!.measure(
-                measureSpec_unspecified,
-                measureSpec_unspecified
-            )
+            var rightSpace = 0
+
+            if (searchCloseButton!!.visibility == View.VISIBLE) {
+                searchCloseButton!!.measure(
+                    measureSpec_unspecified,
+                    measureSpec_unspecified
+                )
+                rightSpace += searchCloseButton!!.measuredWidth + searchCloseButton!!.paddingStart + searchCloseButton!!.paddingEnd
+            }
 
             editText!!.measure(
-                measureSpec_exactly(width - searchCloseButton!!.measuredWidth - searchCloseButton!!.paddingStart - searchCloseButton!!.paddingEnd),
+                measureSpec_exactly(width - rightSpace),
                 measureSpec_unspecified
             )
 
@@ -523,12 +529,13 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 (measuredHeight + top + editText!!.measuredHeight) / 2
             )
 
-            searchCloseButton!!.layout(
-                editText!!.right,
-                (measuredHeight + top - searchCloseButton!!.measuredHeight) / 2,
-                editText!!.right + searchCloseButton!!.measuredWidth,
-                (measuredHeight + top + searchCloseButton!!.measuredHeight) / 2
-            )
+            if (searchCloseButton!!.visibility == View.VISIBLE)
+                searchCloseButton!!.layout(
+                    editText!!.right,
+                    (measuredHeight + top - searchCloseButton!!.measuredHeight) / 2,
+                    editText!!.right + searchCloseButton!!.measuredWidth,
+                    (measuredHeight + top + searchCloseButton!!.measuredHeight) / 2
+                )
         }
 
         val firstActionIndex = if (contentView?.visibility == View.VISIBLE) {
@@ -650,7 +657,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             else {
                 tempNavigationType = navigationType
                 navigationType = BACK
-                searchCloseButton!!.visibility = View.VISIBLE
+                searchCloseButton!!.isVisible = editText!!.text?.isNotEmpty() == true
                 editText!!.visibility = View.VISIBLE
                 editText!!.showKeyboard()
                 searchListener?.onSearchExpanded()

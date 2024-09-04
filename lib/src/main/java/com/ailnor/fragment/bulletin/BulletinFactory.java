@@ -108,4 +108,5 @@ public final class BulletinFactory {
     private Context getContext() {
         return fragment != null ? fragment.getParentActivity() : containerLayout.getContext();
     }
+
 }

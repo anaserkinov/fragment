@@ -58,6 +58,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     var arguments: Bundle? = null
         private set
     private var visibleDialog: Dialog? = null
+    private var showDialogRequested = false
 
     @set:JvmName("setParentDialogLocal")
     protected var parentDialog: Dialog? = null
@@ -317,14 +318,22 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     open fun onStart() {}
 
-    open fun onResume() {}
+    open fun onResume() {
+        if (showDialogRequested) {
+            showDialogRequested = false
+            try {
+                if (visibleDialog != null) {
+                    visibleDialog!!.show()
+                }
+            } catch (e: java.lang.Exception) {
+            }
+        }
+    }
     open fun onPause() {
         try {
-            if (visibleDialog != null && visibleDialog!!.isShowing && dismissDialogOnPause(
-                    visibleDialog!!
-                )
-            ) {
+            if (visibleDialog != null && visibleDialog!!.isShowing && dismissDialogOnPause(visibleDialog!!)) {
                 tempDismiss = true
+                showDialogRequested = true
                 visibleDialog!!.dismiss()
             }
         } catch (e: java.lang.Exception) {
@@ -563,12 +572,14 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             visibleDialog!!.setCanceledOnTouchOutside(true)
             visibleDialog!!.setOnShowListener {
                 tempDismiss = false
+                showDialogRequested = false
                 onShowListener?.onShow(it as Dialog)
             }
             visibleDialog!!.setOnDismissListener { dialog1: DialogInterface ->
                 onDismissListener?.onDismiss(dialog1)
                 onDialogDismiss(dialog1 as Dialog)
                 if (dialog1 === visibleDialog && !tempDismiss) {
+                    showDialogRequested = false
                     visibleDialog = null
                 }
             }
@@ -756,11 +767,14 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     open fun onGetFirstInStack() {
-        try {
-            if (visibleDialog != null) {
-                visibleDialog!!.show()
+        if (showDialogRequested){
+            showDialogRequested = false
+            try {
+                if (visibleDialog != null) {
+                    visibleDialog!!.show()
+                }
+            } catch (e: java.lang.Exception) {
             }
-        } catch (e: java.lang.Exception) {
         }
     }
 

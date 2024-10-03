@@ -1325,7 +1325,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     //    private var interpolator = FastOutLinearInInterpolator()
     private var currentGroupId = 0
     private var removingFragmentInAnimation = 0
-    private var removingFragmentInWait = 0
+    var removingFragmentInWait = 0
+        private set
     val fragmentsCount: Int
         get() = fragmentsStack.size
     val fragmentCountInAnimation: Int

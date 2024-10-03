@@ -166,7 +166,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         set(value) {
             field = value
             if (value == NONE) {
-                navigationView?.visibility = View.GONE
+                navigationView?.visibility = GONE
                 return
             }
             if (navigationView == null) {
@@ -174,7 +174,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 navigationView!!.setPadding(dp(12))
                 navigationView!!.background = makeCircleRippleDrawable()
                 navigationView!!.setOnClickListener {
-                    if (editText?.visibility == View.VISIBLE) {
+                    if (editText?.visibility == VISIBLE) {
                         closeSearchMode()
                     } else
                         actionListener.onAction(navigationType)
@@ -339,7 +339,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
     }
 
     fun onBackPressed(): Boolean {
-        return if (editText?.visibility == View.VISIBLE) {
+        return if (editText?.visibility == VISIBLE) {
             closeSearchMode()
             true
         } else
@@ -350,10 +350,10 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         if (tempNavigationType == 0)
             return
         navigationType = tempNavigationType
-        searchCloseButton!!.visibility = View.GONE
+        searchCloseButton!!.visibility = GONE
         editText!!.hideKeyboard()
-        editText!!.visibility = View.GONE
-        contentView?.visibility = View.VISIBLE
+        editText!!.visibility = GONE
+        contentView?.visibility = VISIBLE
         searchListener?.onSearchCollapsed()
         editText!!.text.clear()
     }

@@ -420,62 +420,71 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                         continue
                     }
                     if (leftSpace == 0) {
-                        if (layoutParams.flags and SHOW_AS_ACTION_IF_ROOM != 0 && !activeOverflowItems.contains(
-                                layoutParams
-                            )
-                        ) {
-                            child.visibility = GONE
-                            addToOverFlow(layoutParams)
+                        if (layoutParams.flags and SHOW_AS_ACTION_IF_ROOM != 0) {
+                            if (!activeOverflowItems.contains(layoutParams)) {
+                                child.visibility = GONE
+                                addToOverFlow(layoutParams)
+                            } else if (layoutParams.showBadge)
+                                overflowCountWithBadge ++
+                        } else if (layoutParams.flags and SHOW_AS_ACTION_ALWAYS != 0){
+                            child.measure(measureSpec_unspecified, measureSpec_unspecified)
+                            width -= child.measuredWidth
+                            child.visibility = VISIBLE
+                            removeOverFlow(layoutParams)
+                            if (layoutParams.showBadge)
+                                overflowCountWithBadge++
                         }
                         continue
                     }
                     child.measure(measureSpec_unspecified, measureSpec_unspecified)
+                    child.visibility = VISIBLE
                     leftSpace = width - child.measuredWidth
                     if (leftSpace <= realWidth / 2) {
-                        if (i != actionStartIndex) {
-                            var index = actionStartIndex + 1
-                            while (leftSpace < dp(48) && index < childCount) {
-                                val preChild = getChildAt(i - 1)
-                                preChild.visibility = View.GONE
-                                val preChildParams = preChild.layoutParams as LayoutParams
-                                if (preChildParams.flags and SHOW_AS_ACTION_ALWAYS == 0 && !activeOverflowItems.contains(
-                                        preChildParams
-                                    )
-                                )
-                                    addToOverFlow(preChild.layoutParams as LayoutParams)
+                        var index = i
+                        while (leftSpace < dp(48) && index >= actionStartIndex){
+                            val preChild = getChildAt(index)
+                            val preChildParams = preChild.layoutParams as LayoutParams
+                            if (preChildParams.flags and SHOW_AS_ACTION_IF_ROOM != 0){
+                                preChild.visibility = GONE
                                 leftSpace += preChild.measuredWidth
-                                index++
+                                if (!activeOverflowItems.contains(preChildParams))
+                                    addToOverFlow(preChild.layoutParams as LayoutParams)
+                                else if (layoutParams.showBadge)
+                                    overflowCountWithBadge ++
                             }
-                            if (leftSpace < dp(48))
-                                width -= dp(48) - leftSpace
+                            index --
                         }
-                        if (layoutParams.flags and SHOW_AS_ACTION_IF_ROOM != 0) {
-                            child.visibility = GONE
-                            if (!activeOverflowItems.contains(layoutParams))
-                                addToOverFlow(layoutParams)
-                        }
+                        if (leftSpace < dp(48))
+                            width -= dp(48) - leftSpace
                         leftSpace = 0
                     } else {
                         width -= child.measuredWidth
-                        child.visibility = VISIBLE
                         removeOverFlow(layoutParams)
+                        if (layoutParams.showBadge)
+                            overflowCountWithBadge++
                     }
                 }
             }
         }
 
+        activeOverflowItems.forEach {
+            if (it.flags == 0 && it.showBadge)
+                overflowCountWithBadge ++
+        }
+
         if (activeOverflowItems.isNotEmpty() && !inSearchMode) {
-            overFlowView.visibility = View.VISIBLE
+            overFlowView.isShowing = overflowCountWithBadge != 0
+            overFlowView.visibility = VISIBLE
             overFlowView.measure(
                 dp(24),
                 dp(24)
             )
             width -= overFlowView.measuredWidth
         } else
-            overFlowView.visibility = View.GONE
+            overFlowView.visibility = GONE
 
         if (inSearchMode)
-            contentView?.visibility = View.GONE
+            contentView?.visibility = GONE
         else
             contentView?.measure(
                 measureSpec_exactly(width),
@@ -510,7 +519,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         else
             0
 
-        if (navigationView?.visibility == View.VISIBLE) {
+        if (navigationView?.visibility == VISIBLE) {
             navigationView!!.layout(
                 left,
                 (measuredHeight + top - navigationView!!.measuredHeight) / 2,
@@ -520,7 +529,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             left += navigationView!!.measuredWidth
         }
 
-        if (editText?.visibility == View.VISIBLE) {
+        if (editText?.visibility == VISIBLE) {
 
             editText!!.layout(
                 left,
@@ -529,7 +538,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 (measuredHeight + top + editText!!.measuredHeight) / 2
             )
 
-            if (searchCloseButton!!.visibility == View.VISIBLE)
+            if (searchCloseButton!!.visibility == VISIBLE)
                 searchCloseButton!!.layout(
                     editText!!.right,
                     (measuredHeight + top - searchCloseButton!!.measuredHeight) / 2,
@@ -557,7 +566,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         } else
             indexOfChild(navigationView)
 
-        if (editText?.visibility != View.VISIBLE) {
+        if (editText?.visibility != VISIBLE) {
             for (i in childCount - 1 downTo firstActionIndex + 1) {
                 val child = getChildAt(i)
                 if (child.visibility != View.VISIBLE)
@@ -926,12 +935,6 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                     actionBar!!.addSearch()
             }
             item = null
-        }
-
-        internal fun temp_build(): LayoutParams {
-            val temp = item!!
-            build()
-            return temp
         }
     }
 

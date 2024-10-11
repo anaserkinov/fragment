@@ -410,6 +410,17 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             for (i in actionStartIndex until childCount)
                 getChildAt(i).visibility = View.GONE
         } else {
+            contentView?.measure(
+                measureSpec_unspecified,
+                measureSpec_unspecified
+            )
+            var occupiedSpace = 0
+            if (contentView != null)
+                occupiedSpace = contentView!!.measuredWidth
+            else
+                realWidth/2
+            occupiedSpace += dp(8)
+
             var leftSpace = -1
             for (i in actionStartIndex until childCount) {
                 val child = getChildAt(i)
@@ -438,14 +449,16 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                     }
                     child.measure(measureSpec_unspecified, measureSpec_unspecified)
                     child.visibility = VISIBLE
+                    width -= child.measuredWidth
                     leftSpace = width - child.measuredWidth
-                    if (leftSpace <= realWidth / 2) {
+                    if (leftSpace <= occupiedSpace) {
                         var index = i
-                        while (leftSpace < dp(48) && index >= actionStartIndex){
+                        while (index >= actionStartIndex){
                             val preChild = getChildAt(index)
                             val preChildParams = preChild.layoutParams as LayoutParams
                             if (preChildParams.flags and SHOW_AS_ACTION_IF_ROOM != 0){
                                 preChild.visibility = GONE
+                                width += preChild.measuredWidth
                                 leftSpace += preChild.measuredWidth
                                 if (!activeOverflowItems.contains(preChildParams))
                                     addToOverFlow(preChild.layoutParams as LayoutParams)
@@ -458,7 +471,6 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                             width -= dp(48) - leftSpace
                         leftSpace = 0
                     } else {
-                        width -= child.measuredWidth
                         removeOverFlow(layoutParams)
                         if (layoutParams.showBadge)
                             overflowCountWithBadge++
@@ -487,7 +499,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             contentView?.visibility = GONE
         else
             contentView?.measure(
-                measureSpec_exactly(width),
+                measureSpec_exactly(width - dp(8)),
                 measureSpec_unspecified
             )
 

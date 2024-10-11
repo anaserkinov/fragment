@@ -406,6 +406,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
 
         overflowCountWithBadge = 0
 
+        var itemsWithAction = 0
         if (inSearchMode) {
             for (i in actionStartIndex until childCount)
                 getChildAt(i).visibility = View.GONE
@@ -444,6 +445,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                             removeOverFlow(layoutParams)
                             if (layoutParams.showBadge)
                                 overflowCountWithBadge++
+                            itemsWithAction ++
                         }
                         continue
                     }
@@ -451,6 +453,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                     child.visibility = VISIBLE
                     width -= child.measuredWidth
                     leftSpace = width - child.measuredWidth
+                    itemsWithAction ++
                     if (leftSpace <= occupiedSpace) {
                         var index = i
                         while (index >= actionStartIndex){
@@ -464,6 +467,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                                     addToOverFlow(preChild.layoutParams as LayoutParams)
                                 else if (layoutParams.showBadge)
                                     overflowCountWithBadge ++
+                                itemsWithAction --
                             }
                             index --
                         }
@@ -499,7 +503,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             contentView?.visibility = GONE
         else
             contentView?.measure(
-                measureSpec_exactly(width - dp(8)),
+                measureSpec_exactly(width - if (itemsWithAction > 0) dp(8) else 0),
                 measureSpec_unspecified
             )
 

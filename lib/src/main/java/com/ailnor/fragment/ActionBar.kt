@@ -443,8 +443,6 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                             width -= child.measuredWidth
                             child.visibility = VISIBLE
                             removeOverFlow(layoutParams)
-                            if (layoutParams.showBadge)
-                                overflowCountWithBadge++
                             itemsWithAction ++
                         }
                         continue
@@ -476,8 +474,6 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                         leftSpace = 0
                     } else {
                         removeOverFlow(layoutParams)
-                        if (layoutParams.showBadge)
-                            overflowCountWithBadge++
                     }
                 }
             }
@@ -645,6 +641,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         invisibleOverflowItems.clear()
 
         overflowCountWithBadge = 0
+        overFlowView.isShowing = overflowCountWithBadge != 0
 
         var current = firstActionIndex + 1
         val last = childCount

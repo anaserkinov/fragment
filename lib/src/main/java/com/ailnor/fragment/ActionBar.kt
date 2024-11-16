@@ -607,7 +607,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
     }
 
     private fun addToOverFlow(layoutParams: LayoutParams) {
-        activeOverflowItems.add(0, layoutParams)
+        activeOverflowItems.add(layoutParams)
         if (layoutParams.showBadge)
             overflowCountWithBadge++
         overFlowView.isShowing = overflowCountWithBadge != 0

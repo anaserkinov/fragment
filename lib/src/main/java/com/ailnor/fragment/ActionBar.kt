@@ -597,7 +597,7 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
     override fun drawChild(canvas: Canvas, child: View?, drawingTime: Long): Boolean {
         val result = super.drawChild(canvas, child, drawingTime)
 
-        if (AndroidUtilities.isHoliday && navigationType == HOME && child == contentView) {
+        if (AndroidUtilities.isWinter && navigationType == HOME && child == contentView) {
             if (snowflakesEffect == null) {
                 snowflakesEffect = SnowflakesEffect(0)
                 snowflakesEffect!!.setFitSystemWindows(fitsSystemWindows)

@@ -42,7 +42,7 @@ import kotlin.math.min
 
 class FragmentContainer(context: Context) : FrameLayout(context) {
 
-    private var frameAnimationFinishRunnable = ArrayDeque<Runnable>()
+    val frameAnimationFinishRunnable = ArrayDeque<Runnable>()
     var inAnimation = false
     private var touching = false
     private var isSlideFinishing = false
@@ -70,9 +70,11 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private var cancelSlide = false
 
     companion object {
-        const val FROM_RIGHT = 1
-        const val FROM_LEFT = 2
-        const val FROM_RIGHT_FLOATING = 3
+        private const val FROM_RIGHT = 1
+        private const val FROM_LEFT = 2
+        private const val FROM_RIGHT_FLOATING = 3
+
+        var ANIMATION_DURATION = 200L
     }
 
     private class Container(context: Context) : FrameLayout(context) {
@@ -513,7 +515,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         val leftFrameWeightDist = leftFrameWeight - 0.35f
                         object : Animation() {
                             init {
-                                duration = (200 * leftFrameWeight).toLong()
+                                duration = (ANIMATION_DURATION * leftFrameWeight).toLong()
                                 setAnimationListener(object : AnimationListener {
                                     override fun onAnimationStart(animation: Animation?) {
                                     }
@@ -549,7 +551,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         val leftFrameWeightDist = 1f - leftFrameWeight
                         object : Animation() {
                             init {
-                                duration = (200 * leftFrameWeight).toLong()
+                                duration = (ANIMATION_DURATION * leftFrameWeight).toLong()
                                 setAnimationListener(object : AnimationListener {
                                     override fun onAnimationStart(animation: Animation?) {
                                     }
@@ -603,7 +605,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             leftFragmentActionBar?.drawableCurrentRotation
                         object : Animation() {
                             init {
-                                duration = (200 * leftFrameWeight / 0.65f).toLong()
+                                duration = (ANIMATION_DURATION * leftFrameWeight / 0.65f).toLong()
                                 setAnimationListener(object : AnimationListener {
                                     override fun onAnimationStart(animation: Animation?) {
                                     }
@@ -650,7 +652,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         val leftFrameWeightDist = 0.65f - leftFrameWeight
                         object : Animation() {
                             init {
-                                duration = (200 * leftFrameWeight / 0.65f).toLong()
+                                duration = (ANIMATION_DURATION * leftFrameWeight / 0.65f).toLong()
                                 setAnimationListener(object : AnimationListener {
                                     override fun onAnimationStart(animation: Animation?) {
                                     }
@@ -751,7 +753,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 200
+                        duration = ANIMATION_DURATION
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -809,7 +811,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 200
+                        duration = ANIMATION_DURATION
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -923,7 +925,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 200
+                        duration = ANIMATION_DURATION
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -977,7 +979,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 200
+                        duration = ANIMATION_DURATION
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {}
 
@@ -1043,7 +1045,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 200
+                        duration = ANIMATION_DURATION
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {}
 
@@ -1114,7 +1116,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 200
+                        duration = ANIMATION_DURATION
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -1166,7 +1168,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 200
+                        duration = ANIMATION_DURATION
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -1256,7 +1258,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = 200
+                        duration = ANIMATION_DURATION
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -1625,8 +1627,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                     fragmentsStack[fragmentsStack.size - 1].onPrePause()
 
                                 val duration = max(
-                                    (200 * distToMove / containerView.measuredWidth).toLong(),
-                                    50
+                                    (ANIMATION_DURATION * distToMove / containerView.measuredWidth).toLong(),
+                                    min(50, ANIMATION_DURATION)
                                 )
                                 val animatorSet = AnimatorSet()
                                 val innerTranslationXAnimation: ObjectAnimator
@@ -2003,7 +2005,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 containerView.visibility = VISIBLE
 
                 currentAnimationSet = AnimatorSet()
-                currentAnimationSet!!.duration = 200
+                currentAnimationSet!!.duration = ANIMATION_DURATION
                 val alphaAnimation = ObjectAnimator.ofFloat(containerView, View.ALPHA, 0.8f, 1.0f)
                 val translationXAnimation = ObjectAnimator.ofFloat(
                     containerView,
@@ -2624,7 +2626,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 inAnimation = true
 
                 currentAnimationSet = AnimatorSet()
-                currentAnimationSet!!.duration = 200
+                currentAnimationSet!!.duration = ANIMATION_DURATION
                 val alphaAnimation = ObjectAnimator.ofFloat(containerViewBack, View.ALPHA, 1f, 0f)
                 val translationXAnimation = ObjectAnimator.ofFloat(
                     containerViewBack,

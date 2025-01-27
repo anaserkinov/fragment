@@ -73,8 +73,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         private const val FROM_RIGHT = 1
         private const val FROM_LEFT = 2
         private const val FROM_RIGHT_FLOATING = 3
-
-        var ANIMATION_DURATION = 200L
     }
 
     private class Container(context: Context) : FrameLayout(context) {
@@ -515,7 +513,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         val leftFrameWeightDist = leftFrameWeight - 0.35f
                         object : Animation() {
                             init {
-                                duration = (ANIMATION_DURATION * leftFrameWeight).toLong()
+                                duration = (200 * leftFrameWeight).toLong()
                                 setAnimationListener(object : AnimationListener {
                                     override fun onAnimationStart(animation: Animation?) {
                                     }
@@ -551,7 +549,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         val leftFrameWeightDist = 1f - leftFrameWeight
                         object : Animation() {
                             init {
-                                duration = (ANIMATION_DURATION * leftFrameWeight).toLong()
+                                duration = (200 * leftFrameWeight).toLong()
                                 setAnimationListener(object : AnimationListener {
                                     override fun onAnimationStart(animation: Animation?) {
                                     }
@@ -605,7 +603,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                             leftFragmentActionBar?.drawableCurrentRotation
                         object : Animation() {
                             init {
-                                duration = (ANIMATION_DURATION * leftFrameWeight / 0.65f).toLong()
+                                duration = (200 * leftFrameWeight / 0.65f).toLong()
                                 setAnimationListener(object : AnimationListener {
                                     override fun onAnimationStart(animation: Animation?) {
                                     }
@@ -652,7 +650,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         val leftFrameWeightDist = 0.65f - leftFrameWeight
                         object : Animation() {
                             init {
-                                duration = (ANIMATION_DURATION * leftFrameWeight / 0.65f).toLong()
+                                duration = (200 * leftFrameWeight / 0.65f).toLong()
                                 setAnimationListener(object : AnimationListener {
                                     override fun onAnimationStart(animation: Animation?) {
                                     }
@@ -710,7 +708,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         //region NEXT
         fun nextScreen(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
-            if (forceWithoutAnimation) {
+            if (forceWithoutAnimation && !AndroidUtilities.animationEnabled) {
                 leftFrame.updateParams(0.35f, 0f)
                 rightFrame.updateParams(0.65f, 0f)
                 if (oldFragment != null) {
@@ -753,7 +751,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = ANIMATION_DURATION
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -811,7 +809,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = ANIMATION_DURATION
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -863,7 +861,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         //region PREVIOUS
         fun previousScreen(view: View?, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
-            if (forceWithoutAnimation) {
+            if (forceWithoutAnimation || !AndroidUtilities.animationEnabled) {
                 if (oldFragment != null) {
                     oldFragment!!.onPrePause()
                     removingFragmentInAnimation++
@@ -925,7 +923,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = ANIMATION_DURATION
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -979,7 +977,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = ANIMATION_DURATION
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {}
 
@@ -1045,7 +1043,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = ANIMATION_DURATION
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {}
 
@@ -1116,7 +1114,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = ANIMATION_DURATION
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -1168,7 +1166,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = ANIMATION_DURATION
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -1210,7 +1208,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         //region RIGHT
         fun replaceRight(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
-            if (forceWithoutAnimation) {
+            if (forceWithoutAnimation || !AndroidUtilities.animationEnabled) {
                 removingFragmentInAnimation++
                 if (frame == null)
                     frame = Container(context)
@@ -1258,7 +1256,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             startAnimation(
                 object : Animation() {
                     init {
-                        duration = ANIMATION_DURATION
+                        duration = 200
                         setAnimationListener(object : AnimationListener {
                             override fun onAnimationStart(animation: Animation?) {
                             }
@@ -1303,7 +1301,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
 
         //region MODAL
         fun showAsModal(view: View, actionBar: ActionBar?, forceWithoutAnimation: Boolean) {
-            if (forceWithoutAnimation) {
+            if (forceWithoutAnimation || !AndroidUtilities.animationEnabled) {
                 leftFrame.updateParams(0.65f, 0f)
                 rightFrame.updateParams(0.35f, 0f)
             } else
@@ -1627,8 +1625,8 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                     fragmentsStack[fragmentsStack.size - 1].onPrePause()
 
                                 val duration = max(
-                                    (ANIMATION_DURATION * distToMove / containerView.measuredWidth).toLong(),
-                                    min(50, ANIMATION_DURATION)
+                                    (200 * distToMove / containerView.measuredWidth).toLong(),
+                                    min(50, 200L)
                                 )
                                 val animatorSet = AnimatorSet()
                                 val innerTranslationXAnimation: ObjectAnimator
@@ -1945,7 +1943,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             containerViewBack = temp
             bringChildToFront(containerView)
 
-            if (forceWithoutAnimation) {
+            if (forceWithoutAnimation || !AndroidUtilities.animationEnabled) {
                 containerView.translationX = 0f
                 containerView.alpha = 1f
                 if (!fragment.isPopup)
@@ -2005,7 +2003,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 containerView.visibility = VISIBLE
 
                 currentAnimationSet = AnimatorSet()
-                currentAnimationSet!!.duration = ANIMATION_DURATION
+                currentAnimationSet!!.duration = 200
                 val alphaAnimation = ObjectAnimator.ofFloat(containerView, View.ALPHA, 0.8f, 1.0f)
                 val translationXAnimation = ObjectAnimator.ofFloat(
                     containerView,
@@ -2626,7 +2624,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 inAnimation = true
 
                 currentAnimationSet = AnimatorSet()
-                currentAnimationSet!!.duration = ANIMATION_DURATION
+                currentAnimationSet!!.duration = 200
                 val alphaAnimation = ObjectAnimator.ofFloat(containerViewBack, View.ALPHA, 1f, 0f)
                 val translationXAnimation = ObjectAnimator.ofFloat(
                     containerViewBack,

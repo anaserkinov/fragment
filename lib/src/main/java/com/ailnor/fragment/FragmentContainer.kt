@@ -3091,7 +3091,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private val checkRunnable = object : Runnable {
         override fun run() {
             if (!inAnimation && !startedTracking && frameAnimationFinishRunnable.size != 0) {
-                post(frameAnimationFinishRunnable.removeFirst())
+                post(frameAnimationFinishRunnable.removeAt(0))
                 post(this)
             }
         }

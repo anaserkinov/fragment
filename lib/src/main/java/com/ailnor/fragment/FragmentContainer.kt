@@ -1897,7 +1897,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
             return false
 
         if (parentActivity.currentFocus != null && fragment.hideKeyboardOnShow())
-            parentActivity.currentFocus.hideKeyboard()
+            hideKeyboard()
 
         if (newGroup)
             currentGroupId++

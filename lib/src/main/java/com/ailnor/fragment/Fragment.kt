@@ -459,7 +459,8 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     protected fun sendParent(vararg data: Any?) {
-        parentLayout?.send(parentFragmentId, *data)
+        if (parentFragmentId != -1)
+            parentLayout?.send(parentFragmentId, *data)
     }
 
     protected fun send(toRight: Boolean, vararg data: Any?) {

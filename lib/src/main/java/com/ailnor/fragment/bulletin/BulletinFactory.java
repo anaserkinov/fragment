@@ -4,7 +4,6 @@ import static com.ailnor.core.UtilsKt.dp;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
-import android.util.TypedValue;
 import android.widget.FrameLayout;
 
 import androidx.annotation.CheckResult;

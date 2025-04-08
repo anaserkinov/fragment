@@ -702,10 +702,13 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
             it.layoutParams is LayoutParams && (it.layoutParams as LayoutParams).itemId == itemId
         }?.layoutParams as? LayoutParams
 
+
         return if (layoutParams != null) {
             layoutParams.isVisible = isVisible
             if (!isVisible && activeOverflowItems.contains(layoutParams))
                 removeOverFlow(layoutParams)
+            if (layoutParams.flags and SEARCH != 0 && !isVisible && editText != null)
+                closeSearchMode()
             requestLayout()
             true
         } else {
@@ -721,6 +724,8 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
                 } ?: return false
                 removeOverFlow(layoutParams)
                 invisibleOverflowItems.add(layoutParams)
+                if (layoutParams.flags and SEARCH != 0 && editText != null)
+                    closeSearchMode()
             }
             requestLayout()
             true

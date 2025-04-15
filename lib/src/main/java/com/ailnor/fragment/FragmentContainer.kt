@@ -2728,7 +2728,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     fun popScreensFromStack(count: Int, removeLatest: Boolean) {
-        var index = fragmentsStack.size - 2
+        var index = fragmentsStack.size - 2 - max(fragmentsCount - fragmentCountInAnimation, 0)
         val lastIndex = index - count
         if (index >= 0)
             while (index > lastIndex) {

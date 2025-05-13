@@ -52,7 +52,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     private lateinit var viewLifecycleRegistry: LifecycleRegistry
     private var lifecycleRegistry: LifecycleRegistry
 
-    var lifecycleCallback: LifecycleCallback? = null
+    private var lifecycleCallbacks = mutableSetOf<LifecycleCallback>()
 
     // make protected after update bottom sheet
     var arguments: Bundle? = null
@@ -96,6 +96,9 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     fun fragmentsCount() = parentLayout!!.fragmentsCount
     fun fragmentsCountInAnimation() = parentLayout!!.fragmentCountInAnimation
+
+    fun addLifecycleCallback(callback: LifecycleCallback) = lifecycleCallbacks.add(callback)
+    fun removeLifecycleCallback(callback: LifecycleCallback) = lifecycleCallbacks.remove(callback)
 
     val context: Context
         get() = parentLayout!!.context
@@ -293,12 +296,16 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         savedView = null
         isFinished = true
-        lifecycleCallback?.onChange(Lifecycle.Event.ON_DESTROY)
+        lifecycleCallbacks.forEach {
+            it.onChange(Lifecycle.Event.ON_DESTROY)
+        }
     }
 
     open fun reCreate() {
         lifecycleRegistry = LifecycleRegistry(this)
-        lifecycleCallback?.onChange(Lifecycle.Event.ON_CREATE)
+        lifecycleCallbacks.forEach {
+            it.onChange(Lifecycle.Event.ON_CREATE)
+        }
         isFinished = false
         isFinishing = false
         isStarted = false

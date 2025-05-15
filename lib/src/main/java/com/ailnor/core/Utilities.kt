@@ -6,6 +6,11 @@ package com.ailnor.core
 
 object Utilities {
 
+    fun clamp01(value: Float): Float {
+        return clamp(value, 1f, 0f)
+    }
+
+
     fun clamp(value: Float, maxValue: Float, minValue: Float): Float {
         if (java.lang.Float.isNaN(value)) {
             return minValue
@@ -14,5 +19,4 @@ object Utilities {
             maxValue
         } else Math.max(Math.min(value, maxValue), minValue)
     }
-
 }

@@ -13,6 +13,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -39,6 +40,7 @@ import android.widget.ImageView
 import androidx.core.content.ContextCompat
 import androidx.core.util.forEach
 import androidx.core.view.children
+import com.ailnor.fragment.R
 import java.lang.reflect.Field
 import java.security.SecureRandom
 import java.util.Calendar
@@ -46,11 +48,11 @@ import java.util.Hashtable
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 import kotlin.math.ceil
-import com.ailnor.fragment.R
 
 object AndroidUtilities {
 
     private val typefaceCache = Hashtable<String, Typeface>()
+    private var mediumTypeface: Typeface? = null
     private var adjustOwnerId = 0
     private var lastFragmentId = 1
     var density = 1f
@@ -243,6 +245,20 @@ object AndroidUtilities {
                 flags and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
             }
             decorView.systemUiVisibility = flags
+        }
+    }
+
+    fun setLightNavigationBar(view: View?, enable: Boolean) {
+        if (view != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            var flags = view.systemUiVisibility
+            if (((flags and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR) > 0) != enable) {
+                if (enable) {
+                    flags = flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                } else {
+                    flags = flags and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
+                }
+                view.setSystemUiVisibility(flags)
+            }
         }
     }
 
@@ -528,6 +544,31 @@ object AndroidUtilities {
         return km.isKeyguardSecure
     }
 
+    fun isActivityRunning(activity: Activity?): Boolean {
+        if (activity == null) {
+            return false
+        }
+
+        return !activity.isDestroyed && !activity.isFinishing
+    }
+
+    fun findActivity(context: Context?): Activity? {
+        if (context is Activity) {
+            return context
+        }
+        if (context is ContextWrapper) {
+            return findActivity(context.baseContext)
+        }
+        return null
+    }
+
+    fun isSafeToShow(context: Context?): Boolean {
+        val activity: Activity? = findActivity(context)
+        if (activity == null) return true
+        return isActivityRunning(activity)
+    }
+
+
     fun shakeView(view: View?, x: Float, num: Int) {
         if (view == null) {
             return
@@ -737,6 +778,13 @@ object AndroidUtilities {
         }
     }
 
+    fun removeFromParent(child: View?) {
+        if (child != null && child.parent != null) {
+            (child.parent as ViewGroup).removeView(child)
+        }
+    }
+
+
     fun lerp(ab: FloatArray, f: Float): Float {
         return lerp(ab[0], ab[1], f)
     }
@@ -796,6 +844,29 @@ object AndroidUtilities {
             }
             return typefaceCache[assetPath]
         }
+    }
+
+    fun bold(fontMedium: String = "fonts/rmedium.ttf"): Typeface? {
+        if (mediumTypeface == null) {
+            // so system Roboto with 500 weight doesn't support Hebrew (but 700 Roboto does)
+            // there must be a way to take system font 500 and fallback it with system font 700
+            // I haven't found the way, even through private API :(
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+//                mediumTypeface = Typeface.create(null, 500, false);
+//
+//                final String text = "Sample text";
+//                final TextPaint normalPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+//                final TextPaint mediumPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+//                mediumPaint.setTypeface(mediumTypeface);
+//                if (Math.abs(normalPaint.measureText(text) - mediumPaint.measureText(text)) < 0.1f) {
+//                    mediumTypeface = Typeface.create(null, 700, false);
+//                }
+//            }
+            if (mediumTypeface == null) {
+                mediumTypeface = getTypeface(fontMedium)
+            }
+        }
+        return mediumTypeface
     }
 
 }

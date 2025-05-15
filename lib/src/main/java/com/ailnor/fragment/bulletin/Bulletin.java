@@ -41,6 +41,7 @@ import androidx.core.util.Consumer;
 import androidx.core.view.ViewCompat;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
+import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
@@ -73,6 +74,9 @@ public class Bulletin {
 
     public int tag;
     public int hash;
+    private View.OnLayoutChangeListener containerLayoutListener;
+    private SpringAnimation bottomOffsetSpring;
+
 
     public static Bulletin make(@NonNull FrameLayout containerLayout, @NonNull Layout contentLayout, int duration) {
         return new Bulletin(containerLayout, contentLayout, duration);
@@ -123,8 +127,10 @@ public class Bulletin {
     private boolean showing;
     private boolean canHide;
     public int currentBottomOffset;
+    public int lastBottomOffset;
     private Delegate currentDelegate;
     private Layout.Transition layoutTransition;
+    public boolean hideAfterBottomSheet = true;
 
     private Bulletin() {
         layout = null;
@@ -161,7 +167,12 @@ public class Bulletin {
         this.duration = duration;
     }
 
-    public Bulletin show() {
+    public Bulletin hideAfterBottomSheet(boolean hide) {
+        this.hideAfterBottomSheet = hide;
+        return this;
+    }
+
+    public Bulletin show(boolean top) {
         if (!showing && containerLayout != null) {
             showing = true;
 
@@ -176,6 +187,36 @@ public class Bulletin {
             }
             visibleBulletin = this;
             layout.onAttach(this);
+
+            containerLayout.addOnLayoutChangeListener(containerLayoutListener = (v, left, top1, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+                if (currentDelegate != null && !currentDelegate.allowLayoutChanges()) {
+                    return;
+                }
+                if (!top) {
+                    int newOffset = currentDelegate != null ? currentDelegate.getBottomOffset(tag) : 0;
+                    if (lastBottomOffset != newOffset) {
+                        if (bottomOffsetSpring == null || !bottomOffsetSpring.isRunning()) {
+                            bottomOffsetSpring = new SpringAnimation(new FloatValueHolder(lastBottomOffset))
+                                    .setSpring(new SpringForce()
+                                            .setFinalPosition(newOffset)
+                                            .setStiffness(900f)
+                                            .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY));
+                            bottomOffsetSpring.addUpdateListener((animation, value, velocity) -> {
+                                lastBottomOffset = (int) value;
+                                updatePosition();
+                            });
+                            bottomOffsetSpring.addEndListener((animation, canceled, value, velocity) -> {
+                                if (bottomOffsetSpring == animation) {
+                                    bottomOffsetSpring = null;
+                                }
+                            });
+                        } else {
+                            bottomOffsetSpring.getSpring().setFinalPosition(newOffset);
+                        }
+                        bottomOffsetSpring.start();
+                    }
+                }
+            });
 
             layout.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
                 @Override
@@ -199,12 +240,12 @@ public class Bulletin {
                                 setCanHide(true);
                             }, offset -> {
                                 if (currentDelegate != null) {
-                                    currentDelegate.onOffsetChange(layout.getHeight() - offset);
+                                    currentDelegate.onBottomOffsetChange(layout.getHeight() - offset);
                                 }
                             }, currentBottomOffset);
                         } else {
                             if (currentDelegate != null) {
-                                currentDelegate.onOffsetChange(layout.getHeight() - currentBottomOffset);
+                                currentDelegate.onBottomOffsetChange(layout.getHeight() - currentBottomOffset);
                             }
                             updatePosition();
                             layout.onEnterTransitionStart();
@@ -286,7 +327,7 @@ public class Bulletin {
                     }
                     layoutTransition.animateExit(layout, layout::onExitTransitionStart, () -> {
                         if (currentDelegate != null) {
-                            currentDelegate.onOffsetChange(0);
+                            currentDelegate.onBottomOffsetChange(0);
                             currentDelegate.onHide(this);
                         }
                         layout.transitionRunningExit = false;
@@ -296,7 +337,7 @@ public class Bulletin {
                         layout.onDetach();
                     }, offset -> {
                         if (currentDelegate != null) {
-                            currentDelegate.onOffsetChange(layout.getHeight() - offset);
+                            currentDelegate.onBottomOffsetChange(layout.getHeight() - offset);
                         }
                     }, bottomOffset);
                     return;
@@ -304,7 +345,7 @@ public class Bulletin {
             }
 
             if (currentDelegate != null) {
-                currentDelegate.onOffsetChange(0);
+                currentDelegate.onBottomOffsetChange(0);
                 currentDelegate.onHide(this);
             }
             layout.onExitTransitionStart();
@@ -498,13 +539,37 @@ public class Bulletin {
             return 0;
         }
 
-        default void onOffsetChange(float offset) {
+        default boolean bottomOffsetAnimated() {
+            return true;
+        }
+
+        default int getLeftPadding() {
+            return 0;
+        }
+
+        default int getRightPadding() {
+            return 0;
+        }
+
+        default int getTopOffset(int tag) {
+            return 0;
+        }
+
+        default boolean clipWithGradient(int tag) {
+            return false;
+        }
+
+        default void onBottomOffsetChange(float offset) {
         }
 
         default void onShow(Bulletin bulletin) {
         }
 
         default void onHide(Bulletin bulletin) {
+        }
+
+        default boolean allowLayoutChanges() {
+            return true;
         }
     }
     //endregion
@@ -520,6 +585,7 @@ public class Bulletin {
 
         protected Bulletin bulletin;
         Drawable background;
+        public boolean top;
 
         public boolean isTransitionRunning() {
             return transitionRunningEnter || transitionRunningExit;
@@ -699,10 +765,24 @@ public class Bulletin {
         public void updatePosition() {
             float tranlsation = 0;
             if (delegate != null) {
+                if (top) {
+                    tranlsation -= delegate.getTopOffset(bulletin != null ? bulletin.tag : 0);
+                } else {
+                    tranlsation += getBottomOffset();
+                }
+
                 tranlsation += delegate.getBottomOffset(bulletin != null ? bulletin.tag : 0);
             }
             setTranslationY(-tranlsation + inOutOffset);
         }
+
+        public float getBottomOffset() {
+            if (bulletin != null && (delegate == null || delegate.bottomOffsetAnimated()) && bulletin.bottomOffsetSpring != null && bulletin.bottomOffsetSpring.isRunning()) {
+                return bulletin.lastBottomOffset;
+            }
+            return delegate.getBottomOffset(bulletin != null ? bulletin.tag : 0);
+        }
+
 
         public interface Callback {
 
@@ -1283,7 +1363,7 @@ public class Bulletin {
         }
 
         @Override
-        public Bulletin show() {
+        public Bulletin show(boolean top) {
             return this;
         }
     }

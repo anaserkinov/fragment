@@ -35,8 +35,6 @@ import com.ailnor.core.Theme
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
-// TODO It's preferable to invoke the onPause method of the closing fragment before the onResume method of the opening fragment
-
 abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
     interface LifecycleCallback {
@@ -47,9 +45,47 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         abstract fun onPreAttached()
     }
 
+    interface AttachedSheet {
+        val windowView: View?
+        val isShown: Boolean
+        fun dismiss()
+        fun dismiss(tabs: Boolean) {
+            dismiss()
+        }
+
+        fun release()
+
+        val isFullyVisible: Boolean
+
+        fun attachedToParent(): Boolean
+
+        fun onAttachedBackPressed(): Boolean
+        fun showDialog(dialog: Dialog?): Boolean
+
+        fun setKeyboardHeightFromParent(keyboardHeight: Int)
+
+        val isAttachedLightStatusBar: Boolean
+        fun getNavigationBarColor(color: Int): Int
+
+        fun setOnDismissListener(onDismiss: Runnable?)
+
+        fun setLastVisible(lastVisible: Boolean) {}
+    }
+
+    interface AttachedSheetWindow
+
+    class BottomSheetParams {
+        var transitionFromLeft: Boolean = false
+        var allowNestedScroll: Boolean = false
+        var onDismiss: Runnable? = null
+        var onOpenAnimationFinished: Runnable? = null
+        var onPreFinished: Runnable? = null
+        var occupyNavigationBar: Boolean = false
+    }
+
     var viewLifecycleOwner: LifecycleOwner
         private set
-    private lateinit var viewLifecycleRegistry: LifecycleRegistry
+    private var viewLifecycleRegistry: LifecycleRegistry
     private var lifecycleRegistry: LifecycleRegistry
 
     private var lifecycleCallbacks = mutableSetOf<LifecycleCallback>()
@@ -70,13 +106,15 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     var isFinished = false
         private set(value) {
             field = value
-            if (field && savedView != null && viewLifecycleOwner.lifecycle.currentState.isAtLeast(
-                    Lifecycle.State.CREATED
-                )
+            if (
+                field &&
+                savedView != null &&
+                viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)
             )
                 viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         }
     var isFinishing = false
+    private var isFullyVisible = false
     protected var hasToolbar = true
     var groupId = -1
     var innerGroupId = -1
@@ -93,12 +131,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     private var mOnPreAttachedListeners: ArrayList<OnPreAttachedListener>? = null
     private val mNextLocalRequestCode by lazy { AtomicInteger() }
 
-
-    fun fragmentsCount() = parentLayout!!.fragmentsCount
-    fun fragmentsCountInAnimation() = parentLayout!!.fragmentCountInAnimation
-
-    fun addLifecycleCallback(callback: LifecycleCallback) = lifecycleCallbacks.add(callback)
-    fun removeLifecycleCallback(callback: LifecycleCallback) = lifecycleCallbacks.remove(callback)
+    var sheetsStack: ArrayList<AttachedSheet>? = null
 
     val context: Context
         get() = parentLayout!!.context
@@ -121,18 +154,17 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 
                         }
                     }
-                    if (parentLayout != null && savedView?.context != parentLayout!!.context) savedView =
+                    if (field != null && savedView?.context != field!!.context) savedView =
                         null
                 }
                 if (actionBar != null) {
-                    val differentParent =
-                        parentLayout != null && parentLayout!!.context !== requiredActionBar.context
+                    val differentParent = field != null && field!!.context !== requiredActionBar.context
                     if (requiredActionBar.shouldAddToContainer || differentParent) {
                         val parent = requiredActionBar.parent as? ViewGroup
                         if (parent != null) {
                             try {
                                 parent.removeViewInLayout(actionBar)
-                            } catch (_: java.lang.Exception) {
+                            } catch (_: Exception) {
                             }
                         }
                     }
@@ -140,12 +172,12 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
                         actionBar = null
                     }
                 }
-                if (hasToolbar && parentLayout != null && actionBar == null) {
-                    actionBar = createActionBar(parentLayout!!.context)
+                if (hasToolbar && field != null && actionBar == null) {
+                    actionBar = createActionBar(field!!.context)
                     setUpActionBar(requiredActionBar)
                     requiredActionBar.actionListener = object : ActionBar.ActionListener {
                         override fun onAction(action: Int) {
-                            parentLayout?:return
+                            parentLayout ?: return
                             onOptionsItemSelected(action)
                         }
                     }
@@ -205,6 +237,9 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     protected var inTransitionAnimation = false
     protected var fragmentBeginToShow = false
 
+    override val lifecycle: Lifecycle
+        get() = lifecycleRegistry
+
     init {
         this.arguments = arguments
         viewLifecycleOwner = object : LifecycleOwner {
@@ -218,8 +253,35 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         fragmentId = AndroidUtilities.generateFragmentId()
     }
 
-    override val lifecycle: Lifecycle
-        get() = lifecycleRegistry
+    @CallSuper
+    open fun onFragmentCreate(): Boolean {
+        lifecycleRegistry.addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                if (event == Lifecycle.Event.ON_STOP)
+                    savedView?.cancelPendingInputEvents()
+            }
+        })
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        if (arguments != null)
+            parseArguments(arguments!!)
+        return true
+    }
+
+    protected open fun parseArguments(arguments: Bundle) {
+
+    }
+
+    open fun onAttackToContext(context: Context) {}
+
+    open fun createActionBar(context: Context): ActionBar {
+        return ActionBar(context).also { it.fitsSystemWindows = true }
+    }
+
+    open fun setUpActionBar(actionBar: ActionBar) {}
+    open fun onCreateOptionsMenu() {}
+    open fun onCreateOptionsMenu(builder: ActionBar.Builder) {}
+    @CallSuper
+    open fun onOptionsItemSelected(menuId: Int): Boolean { return false }
 
     fun createView(context: Context): View {
         savedView = onCreateView(context)
@@ -230,13 +292,132 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     // for views with default false isClickable, make sure you set it true yourself
     protected abstract fun onCreateView(context: Context): View
 
-    open fun onViewCreated() {
+    open fun onViewCreated() {}
 
+    open fun onStart() {}
+
+    open fun onPreResume() {}
+
+    open fun onResume() {
+        if (showDialogRequested) {
+            showDialogRequested = false
+            try {
+                visibleDialog?.show()
+            } catch (_: Exception) {
+            }
+        }
     }
 
-    protected open fun parseArguments(arguments: Bundle) {
-
+    open fun onGetFirstInStack() {
+        if (showDialogRequested) {
+            showDialogRequested = false
+            try {
+                visibleDialog?.show()
+            } catch (_: Exception) { }
+        }
     }
+
+    open fun onPrePause() {
+        if (viewLifecycleRegistry.currentState != Lifecycle.State.DESTROYED) {
+            viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+            viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        }
+    }
+
+    open fun onPause() {
+        try {
+            if (visibleDialog?.isShowing == true && dismissDialogOnPause(visibleDialog!!)) {
+                tempDismiss = true
+                showDialogRequested = true
+                visibleDialog!!.dismiss()
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    open fun clearViews() {
+        (savedView?.parent as? ViewGroup)?.let {
+            try {
+                onRemoveFromParent()
+                it.removeViewInLayout(savedView)
+            } catch (_: Exception) { }
+        }
+
+        (actionBar?.parent as? ViewGroup)?.let {
+            try {
+                it.removeViewInLayout(actionBar)
+            } catch (_: Exception) {
+            }
+        }
+
+        savedView = null
+        actionBar = null
+        parentLayout = null
+    }
+
+    open fun onRemoveFromParent() {
+        if (sheetsStack == null || sheetsStack!!.isEmpty()) return
+        updateSheetsVisibility()
+    }
+
+    open fun onFragmentDestroy() {
+        if (sheetsStack != null) {
+            for (i in sheetsStack!!.indices.reversed()) {
+                val sheet = sheetsStack!![i]
+                sheet.setLastVisible(false)
+                sheet.dismiss(true)
+                sheetsStack!!.removeAt(i)
+            }
+        }
+
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED))
+            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        savedView = null
+        isFinished = true
+        lifecycleCallbacks.forEach {
+            it.onChange(Lifecycle.Event.ON_DESTROY)
+        }
+    }
+
+    open fun reCreate() {
+        lifecycleRegistry = LifecycleRegistry(this)
+        lifecycleCallbacks.forEach {
+            it.onChange(Lifecycle.Event.ON_CREATE)
+        }
+        isFinished = false
+        isFinishing = false
+        isStarted = false
+        isPaused = true
+    }
+
+
+    fun resume() {
+        if (savedView == null) return
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        if (!isStarted) {
+            isStarted = true
+            onStart()
+        }
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        isPaused = false
+        onResume()
+    }
+
+    fun pause() {
+        if (isPaused)
+            return
+        onPause()
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        isPaused = true
+    }
+
+    fun addLifecycleCallback(callback: LifecycleCallback) = lifecycleCallbacks.add(callback)
+    fun removeLifecycleCallback(callback: LifecycleCallback) = lifecycleCallbacks.remove(callback)
+
+    fun fragmentsCount() = parentLayout!!.fragmentsCount
+    fun fragmentsCountInAnimation() = parentLayout!!.fragmentCountInAnimation
 
     open fun finishFragment(animated: Boolean, synchronized: Boolean = true) {
         if (isFinishing || isFinished || parentLayout == null)
@@ -275,132 +456,117 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         parentLayout!!.removeScreenFromStack(this)
     }
 
-    open fun onAttackToContext(context: Context) {}
-
-    @CallSuper
-    open fun onFragmentCreate(): Boolean {
-        lifecycleRegistry.addObserver(object : LifecycleEventObserver {
-            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-                if (event == Lifecycle.Event.ON_STOP)
-                    savedView?.cancelPendingInputEvents()
+    fun getLastSheet(): AttachedSheet? {
+        if (sheetsStack == null || sheetsStack!!.isEmpty()) return null
+        for (i in sheetsStack!!.indices.reversed()) {
+            if (sheetsStack!![i].isShown) {
+                return sheetsStack!![i]
             }
-        })
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
-        if (arguments != null)
-            parseArguments(arguments!!)
-        return true
+        }
+        return null
     }
 
-    open fun onFragmentDestroy() {
-        if (lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED))
-            lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        savedView = null
-        isFinished = true
-        lifecycleCallbacks.forEach {
-            it.onChange(Lifecycle.Event.ON_DESTROY)
+    fun hasSheet(): Boolean {
+        return sheetsStack != null && !sheetsStack!!.isEmpty()
+    }
+
+    fun hasShownSheet(): Boolean {
+        if (!hasSheet()) return false
+        for (i in sheetsStack!!.indices.reversed()) {
+            if (sheetsStack!![i].isShown) {
+                return true
+            }
+        }
+        return false
+    }
+
+    fun hasSheets(fragment: Fragment?): Boolean {
+        if (fragment == null) return false
+        if (fragment.hasShownSheet()) return true
+        if (fragment.parentLayout !is FragmentContainer) return false
+        return false
+//        val sheetFragment: Fragment? = (fragment.parentLayout as FragmentContainer).getSheetFragment(false)
+//        return sheetFragment != null && sheetFragment.hasShownSheet()
+    }
+
+    fun clearSheets() {
+        if (sheetsStack == null || sheetsStack!!.isEmpty()) return
+        for (i in sheetsStack!!.indices.reversed()) {
+            sheetsStack!![i].dismiss(true)
+        }
+        sheetsStack!!.clear()
+    }
+
+    fun closeSheet(): Boolean {
+        if (sheetsStack != null) {
+            for (i in sheetsStack!!.indices.reversed()) {
+                if (sheetsStack!![i].isShown) {
+                    return sheetsStack!![i].onAttachedBackPressed()
+                }
+            }
+        }
+        return false
+    }
+
+    private fun updateSheetsVisibility() {
+        if (sheetsStack == null) return
+        for (i in sheetsStack!!.indices) {
+            val sheet = sheetsStack!![i]
+            sheet.setLastVisible(i == sheetsStack!!.size - 1 && isFullyVisible)
         }
     }
 
-    open fun reCreate() {
-        lifecycleRegistry = LifecycleRegistry(this)
-        lifecycleCallbacks.forEach {
-            it.onChange(Lifecycle.Event.ON_CREATE)
+    fun attachSheets(parentLayout: FragmentContainer) {
+        if (sheetsStack != null) {
+            for (i in sheetsStack!!.indices) {
+                val sheet: AttachedSheet? = sheetsStack!![i]
+                if (sheet != null && sheet.attachedToParent()) {
+                    AndroidUtilities.removeFromParent(sheet.windowView)
+                    parentLayout.addView(sheet.windowView)
+                }
+            }
         }
-        isFinished = false
-        isFinishing = false
-        isStarted = false
-        isPaused = true
     }
 
-    open fun createActionBar(context: Context): ActionBar {
-        return ActionBar(context).also { it.fitsSystemWindows = true }
+    fun detachSheets() {
+        if (sheetsStack != null) {
+            for (i in sheetsStack!!.indices) {
+                val sheet: AttachedSheet? = sheetsStack!![i]
+                if (sheet != null && sheet.attachedToParent()) {
+                    AndroidUtilities.removeFromParent(sheet.windowView)
+                }
+            }
+        }
     }
 
-    open fun setUpActionBar(actionBar: ActionBar) {
+    fun setKeyboardHeightFromParent(keyboardHeight: Int) {
+        if (sheetsStack != null) {
+            for (i in sheetsStack!!.indices) {
+                val storyViewer: AttachedSheet? = sheetsStack!![i]
+                storyViewer?.setKeyboardHeightFromParent(keyboardHeight)
+            }
+        }
+    }
 
+    fun removeSheet(sheet: AttachedSheet?) {
+        if (sheetsStack == null) return
+        sheetsStack!!.remove(sheet!!)
+        updateSheetsVisibility()
+    }
+
+    fun addSheet(sheet: AttachedSheet?) {
+        if (sheetsStack == null) {
+            sheetsStack = java.util.ArrayList<AttachedSheet>()
+        }
+        sheetsStack!!.add(sheet!!)
+        updateSheetsVisibility()
+    }
+
+    fun onBottomSheetCreated() {
     }
 
     open fun onConfigurationChanged(newConfig: Configuration?) {}
     open fun onOrientationChanged() {}
-
-    open fun onStart() {}
-
-    open fun onResume() {
-        if (showDialogRequested) {
-            showDialogRequested = false
-            try {
-                if (visibleDialog != null) {
-                    visibleDialog!!.show()
-                }
-            } catch (e: java.lang.Exception) {
-            }
-        }
-    }
-    open fun onPause() {
-        try {
-            if (visibleDialog != null && visibleDialog!!.isShowing && dismissDialogOnPause(visibleDialog!!)) {
-                tempDismiss = true
-                showDialogRequested = true
-                visibleDialog!!.dismiss()
-            }
-        } catch (e: java.lang.Exception) {
-        }
-    }
-
-    open fun onPreResume() {}
-    open fun onPrePause() {
-        if (viewLifecycleRegistry.currentState != Lifecycle.State.DESTROYED) {
-            viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-            viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
-            viewLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        }
-    }
-
-    fun resume() {
-        if (savedView == null) return
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
-        if (!isStarted) {
-            isStarted = true
-            onStart()
-        }
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
-        isPaused = false
-        onResume()
-    }
-
-    fun pause() {
-        if (isPaused)
-            return
-        onPause()
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
-        isPaused = true
-    }
-
-    open fun clearViews() {
-        if (savedView != null) {
-            val parent = savedView?.parent as? ViewGroup
-            if (parent != null) {
-                try {
-                    onRemoveFromParent()
-                    parent.removeViewInLayout(savedView)
-                } catch (_: Exception) {
-                }
-            }
-            savedView = null
-        }
-        if (actionBar != null) {
-            val parent = actionBar?.parent as? ViewGroup
-            if (parent != null) {
-                try {
-                    parent.removeViewInLayout(actionBar)
-                } catch (_: Exception) {
-                }
-            }
-            actionBar = null
-        }
-        parentLayout = null
-    }
 
     open fun getLayoutContainer(): FrameLayout? {
         val parent = fragmentView.parent
@@ -409,8 +575,6 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         }
         return null
     }
-
-    open fun onRemoveFromParent() {}
 
     fun presentFragment(
         fragment: Fragment,
@@ -429,7 +593,6 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         )
     }
 
-
     fun nextFragment(
         fragment: Fragment,
         removeLast: Boolean = false,
@@ -438,7 +601,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         parentLayout?.nextFragment(fragment, fragmentId, removeLast, forceWithoutAnimation)
     }
 
-    fun nextScreenInnerGroup(
+    fun nextFragmentInnerGroup(
         fragment: Fragment,
         forceWithoutAnimation: Boolean = false
     ) {
@@ -497,15 +660,12 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     }
 
     open fun dismissCurrentDialog() {
-        if (visibleDialog == null) {
+        if (visibleDialog == null)
             return
-        }
         try {
             visibleDialog!!.dismiss()
             visibleDialog = null
-        } catch (e: java.lang.Exception) {
-
-        }
+        } catch (_: Exception) { }
     }
 
     open fun isLightStatusBar(): Boolean {
@@ -544,7 +704,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
 //                visibleDialog!!.dismiss()
 //                visibleDialog = null
 //            }
-//        } catch (e: java.lang.Exception) {
+//        } catch (e: Exception) {
 //        }
     }
 
@@ -568,12 +728,21 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         if (dialog == null || parentLayout == null || parentLayout!!.startedTracking || !allowInTransition && parentLayout!!.inAnimation) {
             return null
         }
-        try {
-            if (visibleDialog != null) {
-                visibleDialog!!.dismiss()
-                visibleDialog = null
+
+        if (sheetsStack != null) {
+            for (i in sheetsStack!!.indices.reversed()) {
+                if (sheetsStack!![i].isShown) {
+                    if (sheetsStack!![i].showDialog(dialog)) {
+                        return dialog
+                    }
+                }
             }
-        } catch (e: java.lang.Exception) {
+        }
+
+        try {
+            visibleDialog?.dismiss()
+            visibleDialog = null
+        } catch (_: Exception) {
         }
         try {
             visibleDialog = dialog
@@ -593,7 +762,7 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
             }
             visibleDialog!!.show()
             return visibleDialog
-        } catch (e: java.lang.Exception) {
+        } catch (_: Exception) {
 
         }
         return null
@@ -632,29 +801,14 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
         inTransitionAnimation = false
     }
 
-
-    open fun onCreateOptionsMenu() {}
-
-    open fun onCreateOptionsMenu(builder: ActionBar.Builder) {
-
-    }
-
-    @CallSuper
-    open fun onOptionsItemSelected(menuId: Int): Boolean {
-        return false
-    }
-
-
     open fun onBecomeFullyVisible() {
-//        if (ApplicationLoader.applicationContext.getSystemService(Context.ACCESSIBILITY_SERVICE).isEnabled) {
-//            val actionBar: ActionBar = getActionBar()
-//            if (actionBar != null) {
-//                val title: String = actionBar.title
-//                if (!TextUtils.isEmpty(title)) {
-//                    setParentActivityTitle(title)
-//                }
-//            }
-//        }
+        isFullyVisible = true
+        updateSheetsVisibility()
+    }
+
+    fun onBecomeFullyHidden() {
+        isFullyVisible = false
+        updateSheetsVisibility()
     }
 
     fun checkAndRequestPermission(
@@ -773,18 +927,5 @@ abstract class Fragment(arguments: Bundle? = null) : LifecycleOwner {
     open fun generateActivityResultKey(): String {
         return "fragment_" + fragmentId + "_rq#" + mNextLocalRequestCode.getAndIncrement()
     }
-
-    open fun onGetFirstInStack() {
-        if (showDialogRequested){
-            showDialogRequested = false
-            try {
-                if (visibleDialog != null) {
-                    visibleDialog!!.show()
-                }
-            } catch (e: java.lang.Exception) {
-            }
-        }
-    }
-
 
 }

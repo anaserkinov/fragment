@@ -616,7 +616,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                         leftFrame.updateParams(0.35f, 0f)
                                         rightFrame.updateParams(0.65f, 0f)
                                         requestLayout()
-                                        fragmentsStack[fragmentsStack.size - 3].pause()
                                         pauseFragment(fragmentsStack[fragmentsStack.size - 3], true)
                                         inAnimation = false
                                         runStackedRunnable()
@@ -714,7 +713,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 if (oldFragment != null) {
                     oldFragment!!.actionBar?.drawableRotation = 0f
                     oldFragment!!.onPrePause()
-                    oldFragment!!.pause()
                     pauseFragment(oldFragment!!, true)
                     oldFragment = null
                     val temp = leftFrame
@@ -825,7 +823,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 leftFrame.updateParams(0.35f, 0f)
                                 rightFrame.updateParams(0.65f, 0f)
                                 requestLayout()
-                                oldFragment!!.pause()
                                 pauseFragment(oldFragment!!, true)
                                 oldFragment = null
                                 resumeFragment(newFragment!!, true)
@@ -1179,7 +1176,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                 leftFrame.updateParams(1f, 0f)
                                 rightFrame.updateParams(0f, 0f)
                                 requestLayout()
-                                oldFragment!!.pause()
                                 pauseFragment(oldFragment!!, true)
                                 oldFragment = null
                                 inAnimation = false
@@ -1453,7 +1449,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                     fragmentsStack.size - 3
                 else
                     fragmentsStack.size - 2
-                fragmentsStack[index].pause()
                 pauseFragment(
                     fragmentsStack[index],
                     !fragmentsStack[index + 1].isPopup
@@ -1756,17 +1751,18 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     }
 
     private fun pauseFragment(fragment: Fragment, hideView: Boolean) {
-//        fragment.onBecomeFullyHidden()
+        fragment.onBecomeFullyHidden()
+        fragment.pause()
         if (fragment.savedView != null && hideView) {
             val parent = fragment.savedView?.parent as? ViewGroup
             if (parent != null) {
                 fragment.onRemoveFromParent()
                 try {
                     parent.removeViewInLayout(fragment.savedView)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     try {
                         parent.removeView(fragment.savedView)
-                    } catch (e2: Exception) {
+                    } catch (_: Exception) {
                     }
                 }
             }
@@ -1981,12 +1977,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                         }
                     } else {
                         oldFragment.onPrePause()
-                        oldFragment.pause()
                         pauseFragment(oldFragment, !fragment.isPopup)
                     }
                     if (oldFragment2 != null) {
                         oldFragment2.onPrePause()
-                        oldFragment2.pause()
                         pauseFragment(oldFragment2, !fragment.isPopup)
                     }
                 }
@@ -2064,12 +2058,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                                     finishFragment(oldFragment)
                                 }
                             } else {
-                                oldFragment.pause()
                                 pauseFragment(oldFragment, !fragment.isPopup)
                             }
                         }
                         if (oldFragment2 != null) {
-                            oldFragment2.pause()
                             pauseFragment(oldFragment2, !fragment.isPopup)
                         }
                         resumeFragment(fragment, true)
@@ -2274,7 +2266,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 actionBarLayout[0]!!.addFragmentToStack(fragment, true, 0)
                 actionBarLayout[0]!!.showLastFragment()
                 actionBarLayout[0]!!.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0)
-                containerView = actionBarLayout[0]
+                sheetContainer = actionBarLayout[0]
                 setApplyBottomPadding(false)
                 setOnDismissListener { dialog -> fragment.onFragmentDestroy() }
             }
@@ -2309,7 +2301,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 actionBarLayout[0]!!.addFragmentToStack(fragment, true, 0)
                 actionBarLayout[0]!!.showLastFragment()
                 actionBarLayout[0]!!.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0)
-                containerView = actionBarLayout[0]
+                sheetContainer = actionBarLayout[0]
                 setApplyBottomPadding(false)
                 setOnDismissListener { dialog -> fragment.onFragmentDestroy() }
             }
@@ -2823,7 +2815,6 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
                 (previousFragment.actionBar!!.parent as ViewGroup?)?.removeView(previousFragment.actionBar)
             if (previousFragment.savedView != null && previousFragment.savedView!!.parent != null) {
                 previousFragment.onPrePause()
-                previousFragment.pause()
                 pauseFragment(previousFragment, true)
             }
         }

@@ -1339,14 +1339,12 @@ open class BottomSheet @JvmOverloads constructor(
                     if (multipleLinesTitle) {
                         var topOffset = measuredHeight
                         if (customView != null) {
-                            (customView!!.layoutParams as MarginLayoutParams).topMargin =
-                                topOffset
+                            (customView!!.layoutParams as MarginLayoutParams).topMargin = topOffset
                         } else if (this@BottomSheet.sheetContainer != null) {
                             for (i in 1..<sheetContainer!!.size) {
                                 val child = sheetContainer!!.getChildAt(i)
                                 if (child is BottomSheetCell) {
-                                    (child.layoutParams as MarginLayoutParams).topMargin =
-                                        topOffset
+                                    (child.layoutParams as MarginLayoutParams).topMargin = topOffset
                                     topOffset += dp(48)
                                 }
                             }
@@ -1387,14 +1385,14 @@ open class BottomSheet @JvmOverloads constructor(
             topOffset += height
         }
         if (customView != null) {
-            if (customView!!.getParent() != null) {
-                val viewGroup = customView!!.getParent() as ViewGroup
+            if (customView!!.parent != null) {
+                val viewGroup = customView!!.parent as ViewGroup
                 viewGroup.removeView(customView)
             }
             if (!useBackgroundTopPadding) {
-                sheetContainer!!.setClipToPadding(false)
+                sheetContainer!!.clipToPadding = false
                 sheetContainer!!.setClipChildren(false)
-                container!!.setClipToPadding(false)
+                container!!.clipToPadding = false
                 container!!.setClipChildren(false)
                 sheetContainer!!.addView(
                     customView,
@@ -1408,8 +1406,7 @@ open class BottomSheet @JvmOverloads constructor(
                         0
                     )
                 )
-                (customView!!.getLayoutParams() as MarginLayoutParams).topMargin =
-                    -backgroundPaddingTop + dp(topOffset)
+                (customView!!.layoutParams as MarginLayoutParams).topMargin = -backgroundPaddingTop + dp(topOffset)
             } else {
                 sheetContainer!!.addView(
                     customView,
@@ -2366,7 +2363,7 @@ open class BottomSheet @JvmOverloads constructor(
         shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate()
         shadowDrawable.setColorFilter(
             PorterDuffColorFilter(
-                Color.RED,
+                Color.WHITE,
                 PorterDuff.Mode.MULTIPLY
             )
         )

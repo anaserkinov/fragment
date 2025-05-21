@@ -1874,7 +1874,7 @@ open class BottomSheet @JvmOverloads constructor(
 
     fun onDismissAnimationStart() {}
 
-    val containerViewHeight: Int
+    open val containerViewHeight: Int
         get() {
             if (this.sheetContainer == null) {
                 return 0

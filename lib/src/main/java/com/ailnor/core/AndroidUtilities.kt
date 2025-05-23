@@ -568,6 +568,15 @@ object AndroidUtilities {
         return isActivityRunning(activity)
     }
 
+    fun getShadowHeight(): Int {
+        if (density >= 4.0f) {
+            return 3
+        } else if (density >= 2.0f) {
+            return 2
+        } else {
+            return 1
+        }
+    }
 
     fun shakeView(view: View?, x: Float, num: Int) {
         if (view == null) {

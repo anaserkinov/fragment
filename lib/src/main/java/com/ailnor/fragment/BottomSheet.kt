@@ -90,7 +90,7 @@ open class BottomSheet @JvmOverloads constructor(
         protected set
 
     @JvmField
-    var container: ContainerView?
+    var container: ContainerView
     var isKeyboardVisible: Boolean = false
         protected set
     private var lastKeyboardHeight = 0
@@ -232,11 +232,149 @@ open class BottomSheet @JvmOverloads constructor(
     protected var customViewGravity: Int = Gravity.LEFT or Gravity.TOP
     private var transitionFromRight = false
 
+    var attachedFragment: Fragment? = null
+
+    init {
+        if (Build.VERSION.SDK_INT >= 30) {
+            window!!.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        } else
+            window!!.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        val vc = ViewConfiguration.get(context)
+        touchSlop = vc.getScaledTouchSlop()
+
+        val padding = Rect()
+        shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate()
+        shadowDrawable.colorFilter = PorterDuffColorFilter(
+            Color.WHITE,
+            PorterDuff.Mode.MULTIPLY
+        )
+        shadowDrawable.getPadding(padding)
+        backgroundPaddingLeft = padding.left
+        backgroundPaddingTop = padding.top
+
+        container = object : ContainerView(getContext()) {
+            public override fun drawChild(
+                canvas: Canvas,
+                child: View?,
+                drawingTime: Long
+            ): Boolean {
+                try {
+                    return allowDrawContent && super.drawChild(canvas, child, drawingTime)
+                } catch (e: Exception) {
+                }
+                return true
+            }
+
+            override fun dispatchDraw(canvas: Canvas) {
+                super.dispatchDraw(canvas)
+                mainContainerDispatchDraw(canvas)
+            }
+
+            override fun onConfigurationChanged(newConfig: Configuration?) {
+                lastInsets = null
+                container.requestApplyInsets()
+            }
+
+            override fun onAttachedToWindow() {
+                super.onAttachedToWindow()
+                Bulletin.addDelegate(this, object : Bulletin.Delegate {
+                    public override fun getTopOffset(tag: Int): Int {
+                        return AndroidUtilities.statusBarHeight
+                    }
+                })
+            }
+
+            override fun onDetachedFromWindow() {
+                super.onDetachedFromWindow()
+                Bulletin.removeDelegate(this)
+            }
+        }
+        container!!.background = backDrawable
+        focusable = needFocus
+        container!!.fitsSystemWindows = true
+        container!!.setOnApplyWindowInsetsListener(View.OnApplyWindowInsetsListener { v: View?, insets: WindowInsets? ->
+            val newTopInset = insets!!.systemWindowInsetTop
+            if ((newTopInset != 0 || AndroidUtilities.isInMultiWindow) && statusBarHeight != newTopInset) {
+                statusBarHeight = newTopInset
+            }
+            lastInsets = insets
+            v!!.requestLayout()
+            onInsetsChanged()
+            if (Build.VERSION.SDK_INT >= 30) {
+                return@OnApplyWindowInsetsListener WindowInsets.CONSUMED
+            } else {
+                return@OnApplyWindowInsetsListener insets.consumeSystemWindowInsets()
+            }
+        })
+        if (Build.VERSION.SDK_INT >= 30) {
+            container!!.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+        } else {
+            container!!.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        }
+
+        backDrawable.setAlpha(0)
+    }
+
+
     fun transitionFromRight(transitionFromRight: Boolean) {
         this.transitionFromRight = transitionFromRight
     }
 
     fun onOpenAnimationEnd() {
+    }
+
+    protected fun getBottomSheetWidth(isPortrait: Boolean, width: Int, height: Int): Int {
+        return if (isPortrait) width else max(
+            (width * 0.8f).toDouble(),
+            min(dp(480).toDouble(), width.toDouble())
+        ).toInt()
+    }
+
+    protected fun shouldOverlayCameraViewOverNavBar(): Boolean {
+        return false
+    }
+
+    fun setHideSystemVerticalInsets(hideSystemVerticalInsets: Boolean) {
+        val animator = ValueAnimator.ofFloat(
+            hideSystemVerticalInsetsProgress,
+            if (hideSystemVerticalInsets) 1f else 0f
+        ).setDuration(180)
+        animator.setInterpolator(CubicBezierInterpolator.DEFAULT)
+        animator.addUpdateListener(AnimatorUpdateListener { animation: ValueAnimator? ->
+            hideSystemVerticalInsetsProgress = animation!!.getAnimatedValue() as Float
+            container!!.requestLayout()
+            sheetContainer!!.requestLayout()
+        })
+        animator.start()
+    }
+
+    @get:RequiresApi(api = Build.VERSION_CODES.Q)
+    private val additionalMandatoryOffsets: Int
+        get() {
+            if (!calcMandatoryInsets || lastInsets == null) {
+                return 0
+            }
+            val insets = lastInsets!!.getSystemGestureInsets()
+            return if (!this.isKeyboardVisible && drawNavigationBar && insets != null && (insets.left != 0 || insets.right != 0)) insets.bottom else 0
+        }
+
+    interface BottomSheetDelegateInterface {
+        fun onOpenAnimationStart()
+        fun onOpenAnimationEnd()
+        fun canDismiss(): Boolean
+    }
+
+
+    class BottomSheetDelegate : BottomSheetDelegateInterface {
+        override fun onOpenAnimationStart() {
+        }
+
+        override fun onOpenAnimationEnd() {
+        }
+
+        override fun canDismiss(): Boolean {
+            return true
+        }
     }
 
     open inner class ContainerView(context: Context) : FrameLayout(context), NestedScrollingParent {
@@ -989,59 +1127,6 @@ open class BottomSheet @JvmOverloads constructor(
         }
     }
 
-    protected fun getBottomSheetWidth(isPortrait: Boolean, width: Int, height: Int): Int {
-        return if (isPortrait) width else max(
-            (width * 0.8f).toDouble(),
-            min(dp(480).toDouble(), width.toDouble())
-        ).toInt()
-    }
-
-    protected fun shouldOverlayCameraViewOverNavBar(): Boolean {
-        return false
-    }
-
-    fun setHideSystemVerticalInsets(hideSystemVerticalInsets: Boolean) {
-        val animator = ValueAnimator.ofFloat(
-            hideSystemVerticalInsetsProgress,
-            if (hideSystemVerticalInsets) 1f else 0f
-        ).setDuration(180)
-        animator.setInterpolator(CubicBezierInterpolator.DEFAULT)
-        animator.addUpdateListener(AnimatorUpdateListener { animation: ValueAnimator? ->
-            hideSystemVerticalInsetsProgress = animation!!.getAnimatedValue() as Float
-            container!!.requestLayout()
-            sheetContainer!!.requestLayout()
-        })
-        animator.start()
-    }
-
-    @get:RequiresApi(api = Build.VERSION_CODES.Q)
-    private val additionalMandatoryOffsets: Int
-        get() {
-            if (!calcMandatoryInsets || lastInsets == null) {
-                return 0
-            }
-            val insets = lastInsets!!.getSystemGestureInsets()
-            return if (!this.isKeyboardVisible && drawNavigationBar && insets != null && (insets.left != 0 || insets.right != 0)) insets.bottom else 0
-        }
-
-    interface BottomSheetDelegateInterface {
-        fun onOpenAnimationStart()
-        fun onOpenAnimationEnd()
-        fun canDismiss(): Boolean
-    }
-
-
-    class BottomSheetDelegate : BottomSheetDelegateInterface {
-        override fun onOpenAnimationStart() {
-        }
-
-        override fun onOpenAnimationEnd() {
-        }
-
-        override fun canDismiss(): Boolean {
-            return true
-        }
-    }
 
     class BottomSheetCell @JvmOverloads constructor(
         context: Context,
@@ -1294,7 +1379,7 @@ open class BottomSheet @JvmOverloads constructor(
                 override fun setTranslationY(translationY: Float) {
                     super.setTranslationY(translationY)
                     if (topBulletinContainer != null) {
-                        topBulletinContainer!!.translationY = -(container!!.getHeight() - sheetContainer!!.getY()) + backgroundPaddingTop
+                        topBulletinContainer!!.translationY = -(container.height - sheetContainer!!.y) + backgroundPaddingTop
                     }
                     onContainerTranslationYChanged(translationY)
                 }
@@ -1632,11 +1717,11 @@ open class BottomSheet @JvmOverloads constructor(
         applyBottomPadding = value
     }
 
-    protected fun onCustomMeasure(view: View?, width: Int, height: Int): Boolean {
+    protected open fun onCustomMeasure(view: View?, width: Int, height: Int): Boolean {
         return false
     }
 
-    protected fun onCustomLayout(
+    protected open fun onCustomLayout(
         view: View?,
         left: Int,
         top: Int,
@@ -2345,95 +2430,6 @@ open class BottomSheet @JvmOverloads constructor(
     }
 
     protected fun onSmoothContainerViewLayout(ty: Float) {
-    }
-
-
-    var attachedFragment: Fragment? = null
-
-    init {
-        if (Build.VERSION.SDK_INT >= 30) {
-            getWindow()!!.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-        } else if (Build.VERSION.SDK_INT >= 21) {
-            getWindow()!!.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-        }
-        val vc = ViewConfiguration.get(context)
-        touchSlop = vc.getScaledTouchSlop()
-
-        val padding = Rect()
-        shadowDrawable = context.getResources().getDrawable(R.drawable.sheet_shadow_round).mutate()
-        shadowDrawable.setColorFilter(
-            PorterDuffColorFilter(
-                Color.WHITE,
-                PorterDuff.Mode.MULTIPLY
-            )
-        )
-        shadowDrawable.getPadding(padding)
-        backgroundPaddingLeft = padding.left
-        backgroundPaddingTop = padding.top
-
-        container = object : ContainerView(getContext()) {
-            public override fun drawChild(
-                canvas: Canvas,
-                child: View?,
-                drawingTime: Long
-            ): Boolean {
-                try {
-                    return allowDrawContent && super.drawChild(canvas, child, drawingTime)
-                } catch (e: Exception) {
-                }
-                return true
-            }
-
-            override fun dispatchDraw(canvas: Canvas) {
-                super.dispatchDraw(canvas)
-                mainContainerDispatchDraw(canvas)
-            }
-
-            override fun onConfigurationChanged(newConfig: Configuration?) {
-                lastInsets = null
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    container!!.requestApplyInsets()
-                }
-            }
-
-            override fun onAttachedToWindow() {
-                super.onAttachedToWindow()
-                Bulletin.addDelegate(this, object : Bulletin.Delegate {
-                    public override fun getTopOffset(tag: Int): Int {
-                        return AndroidUtilities.statusBarHeight
-                    }
-                })
-            }
-
-            override fun onDetachedFromWindow() {
-                super.onDetachedFromWindow()
-                Bulletin.removeDelegate(this)
-            }
-        }
-        container!!.background = backDrawable
-        focusable = needFocus
-        container!!.fitsSystemWindows = true
-        container!!.setOnApplyWindowInsetsListener(View.OnApplyWindowInsetsListener { v: View?, insets: WindowInsets? ->
-            val newTopInset = insets!!.systemWindowInsetTop
-            if ((newTopInset != 0 || AndroidUtilities.isInMultiWindow) && statusBarHeight != newTopInset) {
-                statusBarHeight = newTopInset
-            }
-            lastInsets = insets
-            v!!.requestLayout()
-            onInsetsChanged()
-            if (Build.VERSION.SDK_INT >= 30) {
-                return@OnApplyWindowInsetsListener WindowInsets.CONSUMED
-            } else {
-                return@OnApplyWindowInsetsListener insets.consumeSystemWindowInsets()
-            }
-        })
-        if (Build.VERSION.SDK_INT >= 30) {
-            container!!.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-        } else {
-            container!!.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        }
-
-        backDrawable.setAlpha(0)
     }
 
     fun makeAttached(fragment: Fragment?) {

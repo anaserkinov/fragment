@@ -227,6 +227,8 @@ open class ActionBar(context: Context, navigationType: Int = BACK) : ViewGroup(c
         )
     }
 
+    fun isSearchFieldVisible() = editText?.visibility == View.VISIBLE
+
     private fun showPopup() {
         listPopup
         adapter!!.clear()

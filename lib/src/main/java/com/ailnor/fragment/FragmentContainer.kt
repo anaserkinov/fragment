@@ -75,7 +75,7 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         private const val FROM_RIGHT_FLOATING = 3
     }
 
-    private class Container(context: Context) : FrameLayout(context) {
+    internal class Container(context: Context) : FrameLayout(context) {
 
         var weight = 1f
         var leftOffset = 0F
@@ -213,9 +213,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
         }
     }
 
-    private inner class GroupContainer(context: Context) : FrameLayout(context) {
+    internal inner class GroupContainer(context: Context) : FrameLayout(context) {
 
-        private var leftFrame = Container(context)
+        internal var leftFrame = Container(context)
+            private set
         private var rightFrame = Container(context)
         private var frame: Container? = null
 
@@ -1314,8 +1315,10 @@ class FragmentContainer(context: Context) : FrameLayout(context) {
     private var waitingForKeyboardCloseRunnable: Runnable? = null
 //    private val delayedOpenAnimationRunnable: Runnable? = null
 
-    private var containerView = GroupContainer(context)
-    private var containerViewBack = GroupContainer(context)
+    internal var containerView = GroupContainer(context)
+        private set
+    internal var containerViewBack = GroupContainer(context)
+        private set
     private var currentAnimationSet: AnimatorSet? = null
 
     //    private var interpolator = FastOutLinearInInterpolator()
